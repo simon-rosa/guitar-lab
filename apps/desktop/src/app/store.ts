@@ -23,7 +23,7 @@ export type Theme = 'light' | 'dark' | 'stage';
 export type LayoutMode = 'page' | 'horizontal';
 /** Portées affichées : tablature seule (par défaut), partition seule, ou les deux. */
 export type NotationMode = 'tab' | 'both' | 'score';
-export type DialogId = 'bar' | 'track' | 'song' | 'shortcuts' | 'palette' | 'tuner' | 'roadmap' | 'about' | 'help' | null;
+export type DialogId = 'bar' | 'track' | 'song' | 'shortcuts' | 'palette' | 'tuner' | 'roadmap' | 'about' | 'help' | 'chord' | null;
 
 export interface PlayerUiState {
   ready: boolean;

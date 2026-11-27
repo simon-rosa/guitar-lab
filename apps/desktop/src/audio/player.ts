@@ -1,13 +1,35 @@
 /**
  * Moteur de rendu et de lecture, adossé à alphaTab.
  * Un seul AlphaTabApi pour toute l'application : il dessine la partition
- * (Song → alphaTex → Score) et joue le MIDI généré avec la SoundFont SONiVOX.
+ * (Song → alphaTex → Score) et joue le MIDI généré : banque SONiVOX pour tous les
+ * instruments, remplacée par GeneralUser GS pour le piano, les guitares, basses et batterie.
  */
 import * as alphaTab from '@coderline/alphatab';
 import { AlphaTexError, cursorFromAlphaTabBeat, findAlphaTabBeat, stringFromAlphaTabNote, toAlphaTabScore } from '@guitar-lab/alphatab-bridge';
 import type { Cursor, Song } from '@guitar-lab/core';
 import { useApp } from '../app/store';
 import { isPreview } from '../app/platform';
+import { DEFAULT_REVERB, installOutputEffects, setReverb } from './fx';
+
+installOutputEffects();
+
+/** Instruments GeneralUser GS chargés par-dessus SONiVOX (guitares, basses, piano, batterie). */
+const REALISTIC_BANKS = ['p000', 'p024', 'p025', 'p026', 'p027', 'p028', 'p029', 'p030', 'p031', 'p032', 'p033', 'p034', 'p035', 'p036', 'p037', 'p038', 'p039', 'drums'];
+
+/** Lit un fichier de sons livré avec l'app (en base64 dans l'aperçu web, qui ne sert pas les banques). */
+async function fetchBank(path: string): Promise<Uint8Array> {
+  if (!isPreview()) {
+    const res = await fetch(new URL(path, document.baseURI).href);
+    if (!res.ok) throw new Error(`${path} : ${res.status}`);
+    return new Uint8Array(await res.arrayBuffer());
+  }
+  const res = await fetch(new URL(`${path}.b64.txt`, document.baseURI).href);
+  if (!res.ok) throw new Error(`${path} : ${res.status}`);
+  const bin = atob((await res.text()).replace(/\s+/g, ''));
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
 
 type Api = alphaTab.AlphaTabApi;
 
@@ -53,7 +75,7 @@ class Player {
    * et ce rechargement commence par un « stop » qui couperait la note : on
    * attend donc la fin du rechargement (événement midiLoaded) pour la jouer.
    */
-  private pendingAudition: { cursor: Cursor; at: number } | null = null;
+  private pendingAudition: { cursor: Cursor; at: number; wholeBeat: boolean } | null = null;
   private unlockAudio = () => {
     // Le navigateur garde le son en veille tant qu'il n'a pas été réveillé
     // pendant un geste de l'utilisateur (clic ou touche).
@@ -86,9 +108,16 @@ class Player {
     const api = new alphaTab.AlphaTabApi(element, settings);
     this.api = api;
     // Accès de débogage (outils de test), uniquement en développement.
-    if (import.meta.env.DEV) (window as unknown as { __guitarLab: unknown }).__guitarLab = { player: this, alphaTab };
+    if (import.meta.env.DEV) (window as unknown as { __guitarLab: unknown }).__guitarLab = { player: this, alphaTab, store: useApp };
 
     if (isPreview()) void this.loadPreviewSoundFont(api);
+    // Une fois la banque de base prête, on ajoute les instruments réalistes (une seule fois).
+    let extrasRequested = false;
+    api.soundFontLoaded.on(() => {
+      if (extrasRequested) return;
+      extrasRequested = true;
+      void this.loadRealisticBanks(api);
+    });
     api.soundFontLoad.on((e) => useApp.getState().setPlayer({ loadingSoundFont: e.total ? e.loaded / e.total : 0 }));
     api.midiLoaded.on(() => this.flushAudition());
     window.addEventListener('keydown', this.unlockAudio, true);
@@ -119,14 +148,25 @@ class Player {
 
   private async loadPreviewSoundFont(api: Api) {
     try {
-      const res = await fetch(new URL('soundfont/sonivox.sf2.b64.txt', document.baseURI).href);
-      const b64 = (await res.text()).replace(/\s+/g, '');
-      const bin = atob(b64);
-      const bytes = new Uint8Array(bin.length);
-      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-      api.loadSoundFont(bytes, false);
+      api.loadSoundFont(await fetchBank('soundfont/sonivox.sf2'), false);
     } catch (e) {
       useApp.getState().notify(`Sons indisponibles : ${(e as Error).message}`, 'error');
+    }
+  }
+
+  /** Vrai quand les guitares, basses et batterie réalistes sont chargées. */
+  realisticReady = false;
+
+  private async loadRealisticBanks(api: Api) {
+    try {
+      // Téléchargements en parallèle, ajout dans l'ordre (le dernier chargé l'emporte).
+      const banks = await Promise.all(REALISTIC_BANKS.map((b) => fetchBank(`soundfont/generaluser/${b}.sf3`)));
+      if (this.api !== api) return;
+      for (const bytes of banks) api.loadSoundFont(bytes, true);
+      this.realisticReady = true;
+      window.dispatchEvent(new CustomEvent('guitarlab:sounds-ready'));
+    } catch (e) {
+      console.warn('Instruments réalistes indisponibles, sons de base utilisés.', e);
     }
   }
 
@@ -146,6 +186,7 @@ class Player {
     const optsKey = JSON.stringify(opts);
     if (song === this.lastSong && optsKey === this.lastOpts) return;
     const songChanged = song !== this.lastSong && !(this.lastSong && onlyMixerChanged(this.lastSong, song));
+    setReverb(song.reverb ?? DEFAULT_REVERB);
     if (!songChanged && optsKey === this.lastOpts) {
       // Seul le mixeur a bougé : pas de re-rendu, mise à jour live.
       this.lastSong = song;
@@ -207,18 +248,25 @@ class Player {
   audition(c: Cursor, immediate = false) {
     if (!useApp.getState().auditionNotes) return;
     this.unlockAudio();
-    if (immediate) this.playAuditionNote(c);
-    else this.pendingAudition = { cursor: { ...c }, at: performance.now() };
+    if (immediate) this.playAuditionNote(c, false);
+    else this.pendingAudition = { cursor: { ...c }, at: performance.now(), wholeBeat: false };
+  }
+
+  /** Fait entendre tout le temps (un accord) après la prochaine mise à jour de la partition. */
+  auditionBeat(c: Cursor) {
+    if (!useApp.getState().auditionNotes) return;
+    this.unlockAudio();
+    this.pendingAudition = { cursor: { ...c }, at: performance.now(), wholeBeat: true };
   }
 
   private flushAudition() {
     const pending = this.pendingAudition;
     this.pendingAudition = null;
     // Une demande trop ancienne ne correspond plus au geste de l'utilisateur.
-    if (pending && performance.now() - pending.at < 2000) this.playAuditionNote(pending.cursor);
+    if (pending && performance.now() - pending.at < 2000) this.playAuditionNote(pending.cursor, pending.wholeBeat);
   }
 
-  private playAuditionNote(c: Cursor) {
+  private playAuditionNote(c: Cursor, wholeBeat: boolean) {
     const api = this.api;
     const st = useApp.getState();
     if (!api || !this.score || !st.player.ready || st.player.playing) return;
@@ -226,7 +274,8 @@ class Player {
     if (!beat || beat.index !== c.beat) return;
     const note = beat.voice.bar.staff.isPercussion ? beat.notes[0] : beat.notes.find((n) => stringFromAlphaTabNote(n) === c.string);
     try {
-      if (note) api.playNote(note);
+      if (wholeBeat && beat.notes.length) api.playBeat(beat);
+      else if (note) api.playNote(note);
     } catch {
       /* lecteur pas prêt : on ignore */
     }

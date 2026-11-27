@@ -14,7 +14,7 @@ export type ActionId =
   | 'beat.dot' | 'beat.triplet' | 'beat.pickUp' | 'beat.pickDown'
   | 'note.tie' | 'note.hammer' | 'note.slide' | 'note.bend' | 'note.vibrato' | 'note.palmMute'
   | 'note.dead' | 'note.letRing' | 'note.harmonic' | 'note.ghost' | 'note.accent' | 'note.staccato' | 'note.tap'
-  | 'bar.insert' | 'bar.delete' | 'bar.fill'
+  | 'bar.insert' | 'bar.delete' | 'bar.fill' | 'bar.duplicate' | 'edit.chord'
   | 'voice.1' | 'voice.2' | 'voice.3' | 'voice.4'
   | 'transpose.up' | 'transpose.down'
   | 'play.toggle' | 'play.fromCursor' | 'play.loop'
@@ -73,6 +73,8 @@ export const ACTIONS: ActionInfo[] = [
   { id: 'bar.insert', label: 'Insérer une mesure', group: 'Mesures' },
   { id: 'bar.delete', label: 'Supprimer la mesure', group: 'Mesures' },
   { id: 'bar.fill', label: 'Compléter la mesure avec des silences', group: 'Mesures' },
+  { id: 'bar.duplicate', label: 'Dupliquer la mesure (ou les mesures sélectionnées)', group: 'Mesures' },
+  { id: 'edit.chord', label: 'Insérer un accord…', group: 'Édition' },
   { id: 'voice.1', label: 'Voix 1', group: 'Mesures' },
   { id: 'voice.2', label: 'Voix 2', group: 'Mesures' },
   { id: 'voice.3', label: 'Voix 3', group: 'Mesures' },
@@ -141,6 +143,8 @@ export const DEFAULT_KEYMAP: Keymap = {
   'bar.insert': ['Ctrl+Insert', 'Ctrl+i'],
   'bar.delete': ['Ctrl+Delete', 'Ctrl+Backspace'],
   'bar.fill': ['f'],
+  'bar.duplicate': ['Ctrl+d'],
+  'edit.chord': ['c'],
   'voice.1': ['Ctrl+1'],
   'voice.2': ['Ctrl+2'],
   'voice.3': ['Ctrl+3'],

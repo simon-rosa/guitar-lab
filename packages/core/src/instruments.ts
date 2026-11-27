@@ -65,3 +65,34 @@ export function instrumentKindFromProgram(program: number, isPercussion: boolean
   if (program >= 56 && program <= 71) return 'brass';
   return 'other';
 }
+
+/** Sons proposés par type d'instrument (programme General MIDI joué par la banque réaliste). */
+export interface InstrumentTone {
+  program: number;
+  name: string;
+  hint: string;
+}
+
+export const GUITAR_TONES: InstrumentTone[] = [
+  { program: 27, name: 'Électrique clean', hint: 'Son clair, sans saturation' },
+  { program: 26, name: 'Électrique jazz', hint: 'Clair, rond et doux' },
+  { program: 29, name: 'Crunch / overdrive', hint: 'Légèrement saturé, rock' },
+  { program: 30, name: 'Distorsion / métal', hint: 'Très saturé, riffs et power chords' },
+  { program: 28, name: 'Électrique étouffée', hint: 'Palm mute permanent, funk' },
+  { program: 25, name: 'Folk (cordes acier)', hint: 'Acoustique brillante' },
+  { program: 24, name: 'Classique (nylon)', hint: 'Acoustique douce' },
+  { program: 31, name: 'Harmoniques', hint: 'Effets d’harmoniques' },
+];
+
+export const BASS_TONES: InstrumentTone[] = [
+  { program: 33, name: 'Basse aux doigts', hint: 'Son rond' },
+  { program: 34, name: 'Basse au médiator', hint: 'Attaque marquée, rock' },
+  { program: 35, name: 'Fretless', hint: 'Sans frettes, chantante' },
+  { program: 36, name: 'Slap', hint: 'Funk, percussive' },
+  { program: 32, name: 'Contrebasse', hint: 'Acoustique, jazz' },
+  { program: 38, name: 'Synthé basse', hint: 'Électronique' },
+];
+
+export function tonesFor(kind: InstrumentKind): InstrumentTone[] {
+  return kind === 'guitar' ? GUITAR_TONES : kind === 'bass' ? BASS_TONES : [];
+}

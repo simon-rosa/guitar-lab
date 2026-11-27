@@ -130,9 +130,12 @@ export function ScoreView({ scrollRef }: { scrollRef: React.RefObject<HTMLDivEle
     if (x < el.scrollLeft || x + w > el.scrollLeft + el.clientWidth) el.scrollTo({ left: Math.max(0, x - 120), behavior: 'smooth' });
   }, [cursorRect, scrollRef, pickerOpen]);
 
+  const [dragging, setDragging] = useState(false);
+
   const onMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 0 || !hostRef.current) return;
-    const r = hostRef.current.getBoundingClientRect();
+    const host = hostRef.current;
+    const r = host.getBoundingClientRect();
     const st = useApp.getState();
     const song = st.history.present.song;
     const hit = player.hitTest(e.clientX - r.left, e.clientY - r.top, song);
@@ -144,6 +147,34 @@ export function ScoreView({ scrollRef }: { scrollRef: React.RefObject<HTMLDivEle
     const drums = song.tracks[hit.track]?.kind === 'drums';
     // Le sélecteur s'ouvre quand on vise une corde de la tablature (ou la batterie).
     st.setPicker(!e.shiftKey && (hit.string !== undefined || drums));
+
+    // Glisser la souris : sélectionne les temps (et mesures) parcourus, dans la même piste.
+    const startX = e.clientX;
+    const startY = e.clientY;
+    let moved = false;
+    let lastKey = `${hit.bar}:${hit.beat}`;
+    const onMove = (ev: MouseEvent) => {
+      if (!moved && Math.hypot(ev.clientX - startX, ev.clientY - startY) < 6) return;
+      if (!moved) {
+        moved = true;
+        setDragging(true);
+        useApp.getState().setPicker(false);
+      }
+      const rr = host.getBoundingClientRect();
+      const h2 = player.hitTest(ev.clientX - rr.left, ev.clientY - rr.top, useApp.getState().history.present.song);
+      if (!h2 || h2.track !== hit.track) return;
+      const key = `${h2.bar}:${h2.beat}`;
+      if (key === lastKey) return;
+      lastKey = key;
+      useApp.getState().nav((s) => setCursor(s, { bar: h2.bar, beat: h2.beat }, true));
+    };
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      if (moved) setDragging(false);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
   };
 
   const pickerPos = (() => {
@@ -171,7 +202,7 @@ export function ScoreView({ scrollRef }: { scrollRef: React.RefObject<HTMLDivEle
           <strong>Pour commencer :</strong> cliquez sur une corde de la tablature, puis choisissez la frette. Vous pouvez aussi taper la frette au clavier (0 à 24).
         </div>
       )}
-      <div className="score-wrap" ref={wrapRef} onMouseDown={onMouseDown}>
+      <div className={`score-wrap${dragging ? ' dragging' : ''}`} ref={wrapRef} onMouseDown={onMouseDown}>
         <div ref={hostRef} className="score-host" />
         <div className="bar-status-layer" aria-hidden>
           {badBars.map((b) => (

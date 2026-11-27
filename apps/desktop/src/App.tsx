@@ -8,6 +8,7 @@ import { CommandPalette } from './components/CommandPalette';
 import { ConfirmDialog } from './components/ConfirmDialog';
 import { Fretboard } from './components/Fretboard';
 import { HelpDialog } from './components/HelpDialog';
+import { ChordDialog } from './components/ChordDialog';
 import { MenuBar } from './components/MenuBar';
 import { Modal } from './components/Modal';
 import { RoadmapDialog } from './components/RoadmapDialog';
@@ -42,7 +43,7 @@ function About() {
     <Modal title="Guitar Lab">
       <p>Éditeur de tablatures et partitions pour guitaristes, bassistes et musiciens professionnels.</p>
       <p className="hint">
-        Version 0.2.0 · {s.done} fonctionnalités faites, {s.partial} partielles, {s.skeleton} en squelette sur {s.total}.
+        Version 0.3.0 · {s.done} fonctionnalités faites, {s.partial} partielles, {s.skeleton} en squelette sur {s.total}.
         Rendu et lecture : alphaTab (MPL-2.0), police Bravura (SIL OFL), sons SONiVOX.
       </p>
     </Modal>
@@ -115,6 +116,7 @@ export function App() {
       {dialog === 'roadmap' && <RoadmapDialog />}
       {dialog === 'about' && <About />}
       {dialog === 'help' && <HelpDialog />}
+      {dialog === 'chord' && <ChordDialog />}
       <ConfirmDialog />
       <Toast />
     </div>

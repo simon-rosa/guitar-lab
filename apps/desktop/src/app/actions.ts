@@ -4,6 +4,7 @@ import {
   deleteAtCursor,
   deleteBars,
   deleteSelection,
+  duplicateBars,
   fillBarWithRests,
   insertBarAfter,
   insertBeatBefore,
@@ -99,6 +100,16 @@ export function runAction(id: ActionId): void {
     case 'bar.insert': return edit((s) => moveBar(insertBarAfter(s, s.cursor.bar), 1));
     case 'bar.delete': return edit((s) => deleteBars(s, s.cursor.bar));
     case 'bar.fill': return edit((s) => fillBarWithRests(s));
+    case 'bar.duplicate': {
+      const s = getEditor();
+      const from = s.anchor ? Math.min(s.anchor.bar, s.cursor.bar) : s.cursor.bar;
+      const to = s.anchor ? Math.max(s.anchor.bar, s.cursor.bar) : s.cursor.bar;
+      edit((st) => duplicateBars(st, from, to));
+      return app.notify(from === to ? `Mesure ${from + 1} dupliquée.` : `Mesures ${from + 1} à ${to + 1} dupliquées.`);
+    }
+    case 'edit.chord':
+      if (getEditor().song.tracks[getEditor().cursor.track].kind === 'drums') return app.notify('Les accords ne s’appliquent pas à la batterie.');
+      return app.openDialog('chord');
     case 'voice.1':
     case 'voice.2':
     case 'voice.3':

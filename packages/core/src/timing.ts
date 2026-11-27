@@ -1,4 +1,4 @@
-import type { Bar, Beat, Duration, MasterBar, Song, Tuplet, Voice } from './model';
+import type { Bar, Beat, Direction, Duration, MasterBar, Song, Tuplet, Voice } from './model';
 
 /** Résolution MIDI standard (ticks par noire). */
 export const PPQ = 960;
@@ -89,28 +89,87 @@ export function songDurationSeconds(song: Song): number {
   return song.masterBars.reduce((sum, mb, i) => sum + (barCapacityTicks(mb) / PPQ) * (60 / tempos[i]), 0);
 }
 
+/** Renvois D.C. / D.S. : cible du saut, repère où s'arrêter, repère où reprendre. */
+const JUMPS: Array<{ jump: Direction; target: Direction | null; until: Direction | null; resume: Direction | null }> = [
+  { jump: 'da-capo', target: null, until: null, resume: null },
+  { jump: 'da-capo-al-coda', target: null, until: 'to-coda', resume: 'coda' },
+  { jump: 'da-capo-al-fine', target: null, until: 'fine', resume: null },
+  { jump: 'dal-segno', target: 'segno', until: null, resume: null },
+  { jump: 'dal-segno-al-coda', target: 'segno', until: 'to-coda', resume: 'coda' },
+  { jump: 'dal-segno-al-fine', target: 'segno', until: 'fine', resume: null },
+];
+
 /**
- * Ordre de lecture des mesures en tenant compte des reprises et fins alternatives.
- * (Les sauts D.C./D.S./Coda sont gérés par alphaTab à la lecture ; cette fonction
- * sert à l'export MIDI maison et aux statistiques.)
+ * Ordre de lecture des mesures : reprises, 1re/2e fois, D.C., D.S., Coda et Fine,
+ * avec les mêmes règles que le lecteur d'alphaTab (chaque renvoi n'est pris qu'une
+ * fois ; après un renvoi, les reprises ne sont jouées qu'une fois, avec la dernière fin).
  */
 export function playbackBarOrder(song: Song): number[] {
+  const mbs = song.masterBars;
+  const has = (k: number, d: Direction) => !!mbs[k]?.directions?.includes(d);
+  const find = (d: Direction, from: number, backwardsFirst: boolean): number => {
+    const scan = (step: number) => {
+      for (let k = from; k >= 0 && k < mbs.length; k += step) if (has(k, d)) return k;
+      return -1;
+    };
+    const first = scan(backwardsFirst ? -1 : 1);
+    return first !== -1 ? first : scan(backwardsFirst ? 1 : -1);
+  };
+  /** Plus grand numéro de fin alternative du groupe de reprise qui contient la mesure k. */
+  const lastEnding = (k: number): number => {
+    let max = 0;
+    for (let j = k; j < mbs.length; j++) {
+      if (j > k && mbs[j].repeat?.start) break;
+      for (const e of mbs[j].repeat?.alternateEndings ?? []) max = Math.max(max, e);
+    }
+    return max;
+  };
+
   const order: number[] = [];
+  const taken = new Set<number>();
+  let active: (typeof JUMPS)[number] | null = null;
+  let finalPass = false;
   let i = 0;
   let repeatStart = 0;
   let pass = 1;
   let guard = 0;
-  while (i < song.masterBars.length && guard++ < 100_000) {
-    const mb = song.masterBars[i];
+  while (i < mbs.length && guard++ < 100_000) {
+    const mb = mbs[i];
     if (mb.repeat?.start && pass === 1 && order[order.length - 1] !== i) repeatStart = i;
     const endings = mb.repeat?.alternateEndings;
-    if (endings && endings.length > 0 && !endings.includes(pass)) {
+    if (endings && endings.length > 0 && !endings.includes(finalPass ? lastEnding(i) : pass)) {
       i++;
       continue;
     }
     order.push(i);
     const endCount = mb.repeat?.endCount;
-    if (endCount && pass < endCount) {
+    const willRepeat = !!endCount && !finalPass && pass < endCount;
+
+    if (!active && !willRepeat && !taken.has(i)) {
+      const jump = JUMPS.find((j) => has(i, j.jump) && (j.target === null || find(j.target, i, true) !== -1));
+      if (jump) {
+        taken.add(i);
+        active = jump;
+        finalPass = true;
+        pass = 1;
+        i = jump.target === null ? 0 : find(jump.target, i, true);
+        repeatStart = i;
+        continue;
+      }
+    } else if (active?.until && has(i, active.until)) {
+      if (active.resume === null) break;
+      const k = find(active.resume, i, false);
+      if (k !== -1) {
+        active = null;
+        finalPass = false;
+        pass = 1;
+        i = k;
+        repeatStart = k;
+        continue;
+      }
+    }
+
+    if (willRepeat) {
       pass++;
       i = repeatStart;
       continue;

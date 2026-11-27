@@ -1566,3 +1566,239 @@ legend {
   background: var(--accent-soft);
   color: var(--accent);
 }
+
+/* ---------- Menus de techniques (bend, slide) ---------- */
+.tech-menu {
+  position: relative;
+}
+
+.tech-menu .caret {
+  font-size: 9px;
+  opacity: 0.7;
+  margin-left: 2px;
+}
+
+.tech-pop {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 2500;
+  min-width: 280px;
+  padding: 10px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+  display: grid;
+  gap: 8px;
+}
+
+.tech-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.tech-label {
+  width: 100%;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+}
+
+.pill {
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: none;
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+
+.pill:hover {
+  background: var(--bg-3);
+}
+
+.pill.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.pill-glyph {
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+.tech-list {
+  display: grid;
+  gap: 2px;
+  min-width: 330px;
+}
+
+.tech-item {
+  display: grid;
+  grid-template-columns: 16px 1fr;
+  column-gap: 6px;
+  text-align: left;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  font-size: 13px;
+}
+
+.tech-item:hover {
+  background: var(--bg-3);
+}
+
+.tech-item.on {
+  background: var(--accent-soft);
+}
+
+.tech-item .check-mark {
+  color: var(--accent);
+  grid-row: span 2;
+}
+
+.tech-item .tech-hint {
+  grid-column: 2;
+  font-size: 11.5px;
+  color: var(--ink-2);
+}
+
+.tech-empty {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+
+.tech-remove {
+  justify-self: start;
+}
+
+/* ---------- Bibliothèque d'accords ---------- */
+.chord-roots,
+.chord-qualities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.chord-title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 6px 0 8px;
+  font-size: 22px;
+}
+
+.chord-sub {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ink-2);
+}
+
+.chord-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  gap: 8px;
+}
+
+.chord-card {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 8px 4px 6px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.chord-card:hover,
+.chord-card:focus-visible {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.chord-card .dot {
+  fill: var(--accent);
+}
+
+.chord-label {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+}
+
+.chord-badge {
+  font-size: 9.5px;
+  padding: 1px 5px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+}
+
+.chord-options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.field-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.chord-status {
+  margin-right: auto;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+
+.score-wrap.dragging {
+  user-select: none;
+  cursor: text;
+}
+
+.tone-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.tone-row select {
+  flex: 1;
+  min-width: 0;
+  font-size: 12.5px;
+}
+
+.tool.text.accent-outline {
+  border-color: var(--accent);
+  color: var(--accent);
+  margin-right: 8px;
+}
+
+.techniques .tool.text {
+  padding: 0 7px;
+  font-size: 12px;
+}
+
+.voice-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+}

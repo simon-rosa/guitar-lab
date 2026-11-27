@@ -8,6 +8,7 @@ import { currentBeat, currentNote, DEFAULT_KEYMAP, updateMasterBar, type ActionI
 import { runAction } from '../app/actions';
 import { useApp, useEditor, type NotationMode } from '../app/store';
 import { DURATION_INFO } from './durations';
+import { BendMenu, SlideMenu } from './TechniqueMenu';
 
 function useShortcut(id: ActionId): string {
   const keymap = useApp((s) => s.keymap);
@@ -102,6 +103,7 @@ export function Toolbar() {
             <option value="autre">{knownTs ? 'Autre…' : `${tsKey} (autre…)`}</option>
           </select>
           <Btn action="bar.insert" label="Insérer une mesure après celle-ci" className="text">+ Mesure</Btn>
+          <Btn action="bar.duplicate" label="Dupliquer la mesure (ou les mesures sélectionnées) juste après" className="text">Dupliquer</Btn>
           <button type="button" className="tool text" title="Reprises, section, tempo, armure…" onClick={() => useApp.getState().openDialog('bar')}>
             Plus…
           </button>
@@ -130,10 +132,11 @@ export function Toolbar() {
       </div>
 
       <div className="toolbar-row techniques" aria-label="Techniques de jeu">
+        <Btn action="edit.chord" label="Insérer un accord depuis la bibliothèque" className="text accent-outline">Accord…</Btn>
         <span className="group-label">Techniques</span>
         <Btn action="note.hammer" label="Hammer-on / pull-off" active={!!fx.hammerPull} className="text">Hammer / Pull</Btn>
-        <Btn action="note.slide" label="Slide" active={!!fx.slide} className="text">Slide</Btn>
-        <Btn action="note.bend" label="Bend d’un ton" active={!!fx.bend} className="text">Bend</Btn>
+        <SlideMenu />
+        <BendMenu />
         <Btn action="note.vibrato" label="Vibrato" active={!!fx.vibrato} className="text">Vibrato</Btn>
         <Btn action="note.palmMute" label="Palm mute" active={!!fx.palmMute} className="text">Palm mute</Btn>
         <Btn action="note.dead" label="Note étouffée (x)" active={!!fx.dead} className="text">Étouffée ✕</Btn>
@@ -147,12 +150,14 @@ export function Toolbar() {
         <Btn action="beat.pickDown" label="Coup de médiator descendant" active={beat?.effects.pickStroke === 'down'} className="text">Coup ↓</Btn>
         <Btn action="beat.pickUp" label="Coup de médiator montant" active={beat?.effects.pickStroke === 'up'} className="text">Coup ↑</Btn>
         <span className="spacer" />
-        <span className="group-label">Voix</span>
-        {[1, 2, 3, 4].map((v) => (
-          <Btn key={v} action={`voice.${v}` as ActionId} label={`Voix ${v} (plusieurs lignes mélodiques sur la même portée)`} active={s.cursor.voice === v - 1}>
-            {v}
-          </Btn>
-        ))}
+        <span className="voice-group">
+          <span className="group-label">Voix</span>
+          {[1, 2, 3, 4].map((v) => (
+            <Btn key={v} action={`voice.${v}` as ActionId} label={`Voix ${v} (plusieurs lignes mélodiques sur la même portée)`} active={s.cursor.voice === v - 1}>
+              {v}
+            </Btn>
+          ))}
+        </span>
       </div>
     </div>
   );

@@ -114,7 +114,30 @@ export interface Repeat {
   alternateEndings?: number[];
 }
 
-export type Direction = 'segno' | 'coda' | 'fine' | 'da-capo' | 'dal-segno' | 'to-coda' | 'da-capo-al-fine' | 'dal-segno-al-coda';
+/**
+ * Repères et renvois de structure.
+ * Repères (cibles) : segno, coda, fine. Renvois (sauts, joués en fin de mesure) :
+ * D.C., D.S. et leurs variantes « al Fine » / « al Coda », et « To Coda »
+ * (saut vers la coda lors du second passage).
+ */
+export type Direction =
+  | 'segno' | 'coda' | 'fine'
+  | 'da-capo' | 'da-capo-al-fine' | 'da-capo-al-coda'
+  | 'dal-segno' | 'dal-segno-al-fine' | 'dal-segno-al-coda'
+  | 'to-coda';
+
+export const DIRECTION_LABELS: Record<Direction, string> = {
+  segno: 'Segno 𝄋',
+  coda: 'Coda 𝄌',
+  fine: 'Fine',
+  'da-capo': 'D.C.',
+  'da-capo-al-fine': 'D.C. al Fine',
+  'da-capo-al-coda': 'D.C. al Coda',
+  'dal-segno': 'D.S.',
+  'dal-segno-al-fine': 'D.S. al Fine',
+  'dal-segno-al-coda': 'D.S. al Coda',
+  'to-coda': 'To Coda',
+};
 
 export interface MasterBar {
   timeSignature: [number, number];
@@ -185,6 +208,8 @@ export interface Song {
   meta: SongMeta;
   /** Tempo initial (BPM). */
   tempo: number;
+  /** Réverbération générale de la lecture, 0 (aucune) à 1. Absente : valeur par défaut. */
+  reverb?: number;
   masterBars: MasterBar[];
   tracks: Track[];
 }

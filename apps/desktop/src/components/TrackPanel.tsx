@@ -1,6 +1,6 @@
 /** Pistes et mixeur : sélection, volume, panoramique, solo, muet. */
 import { useState } from 'react';
-import { addTrack, INSTRUMENT_PRESETS, moveTrack, removeTrack, selectTrack, tuningLabel, updateTrack } from '@guitar-lab/core';
+import { addTrack, GM_PROGRAMS, INSTRUMENT_PRESETS, moveTrack, removeTrack, selectTrack, tonesFor, tuningLabel, updateTrack } from '@guitar-lab/core';
 import { askConfirm, useApp, useEditor } from '../app/store';
 
 export function TrackPanel() {
@@ -85,6 +85,17 @@ export function TrackPanel() {
                   onChange={(e) => edit((st) => updateTrack(st, i, { pan: Number(e.target.value) }))}
                 />
               </div>
+              {tonesFor(t.kind).length > 0 && (
+                <label className="tone-row" title="Son de l’instrument (échantillons réalistes)">
+                  <span>Son</span>
+                  <select value={t.program} onChange={(e) => edit((st) => updateTrack(st, i, { program: Number(e.target.value) }))}>
+                    {!tonesFor(t.kind).some((x) => x.program === t.program) && <option value={t.program}>{GM_PROGRAMS[t.program] ?? `Programme ${t.program}`}</option>}
+                    {tonesFor(t.kind).map((x) => (
+                      <option key={x.program} value={x.program} title={x.hint}>{x.name}</option>
+                    ))}
+                  </select>
+                </label>
+              )}
               {selected && (
                 <div className="track-actions">
                   <button type="button" className="ghost small" onClick={() => openDialog('track')}>Réglages…</button>

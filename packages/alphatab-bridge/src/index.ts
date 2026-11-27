@@ -16,6 +16,7 @@ import {
   type Bar,
   type Beat,
   type Cursor,
+  type Direction,
   type Duration,
   type Dynamic,
   type Finger,
@@ -174,6 +175,14 @@ function convertBeat(b: ATBeat, staff: alphaTab.model.Staff, prevDynamic: number
   return beat;
 }
 
+/** Valeurs de `alphaTab.model.Direction` → repères Guitar Lab (les doubles codas sont ignorées). */
+const DIRECTION_FROM_AT: Record<number, Direction> = {
+  0: 'fine', 1: 'segno', 3: 'coda',
+  5: 'da-capo', 6: 'da-capo-al-coda', 8: 'da-capo-al-fine',
+  9: 'dal-segno', 10: 'dal-segno-al-coda', 12: 'dal-segno-al-fine',
+  17: 'to-coda',
+};
+
 function convertMasterBar(mb: alphaTab.model.MasterBar): MasterBar {
   const out = createMasterBar();
   out.timeSignature = [mb.timeSignatureNumerator, mb.timeSignatureDenominator];
@@ -198,6 +207,8 @@ function convertMasterBar(mb: alphaTab.model.MasterBar): MasterBar {
   if (mb.tripletFeel === 1) out.tripletFeel = 'eighth';
   else if (mb.tripletFeel === 2) out.tripletFeel = 'sixteenth';
   if (mb.isAnacrusis) out.anacrusis = true;
+  const dirs = [...(mb.directions ?? [])].map((d) => DIRECTION_FROM_AT[d as number]).filter(Boolean);
+  if (dirs.length) out.directions = dirs;
   return out;
 }
 

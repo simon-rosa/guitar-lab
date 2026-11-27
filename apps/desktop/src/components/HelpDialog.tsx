@@ -19,6 +19,8 @@ const KEYS: Array<[string, string]> = [
   ['Suppr', 'Effacer la note, puis le temps'],
   ['h  s  b  v', 'Hammer, slide, bend, vibrato'],
   ['p  x', 'Palm mute, note étouffée'],
+  ['c', 'Insérer un accord (bibliothèque)'],
+  ['Ctrl+D', 'Dupliquer la mesure ou les mesures sélectionnées'],
   ['Espace', 'Lecture / pause'],
   ['Ctrl+Z / Ctrl+Y', 'Annuler / rétablir'],
   ['Ctrl+K', 'Chercher une commande par son nom'],
@@ -71,6 +73,9 @@ export function HelpDialog() {
       </table>
       <p className="hint">
         Une mesure encadrée en rouge a une durée totale qui ne correspond pas à sa signature (« Trop longue » ou « Incomplète ») : ajoutez, retirez ou changez la durée de notes jusqu’à ce que le rouge disparaisse.
+        <br />
+        Sélection : glissez la souris sur la tablature (ou Maj+clic) pour sélectionner plusieurs temps ou mesures, puis copiez, dupliquez ou bouclez.
+        Les menus « Bend ▾ » et « Slide ▾ » règlent la hauteur et la direction ; « Son » dans le panneau Pistes choisit clean, crunch ou distorsion ; « Plus… » ajoute D.C., D.S. et Coda.
         <br />
         Astuce : le manche en bas de l’écran sert aussi à saisir, un clic sur une case écrit la note. Le bouton « Tablature / Tab + partition / Partition » change les portées affichées.
       </p>

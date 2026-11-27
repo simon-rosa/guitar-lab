@@ -4,10 +4,10 @@
 
 | Priorité | Faites | Partielles | Squelettes | Total |
 | --- | --- | --- | --- | --- |
-| MVP | 29 | 1 | 0 | 30 |
-| V1 | 10 | 21 | 23 | 54 |
+| MVP | 30 | 1 | 0 | 31 |
+| V1 | 12 | 21 | 21 | 54 |
 | V2 | 0 | 1 | 22 | 23 |
-| **Tout** | 39 | 23 | 45 | 107 |
+| **Tout** | 42 | 23 | 43 | 108 |
 
 ## Édition
 
@@ -25,10 +25,11 @@
 | MVP | Copier / coller / annuler illimité | ✅ Fait | `packages/core/src/history.ts` |  |
 | V1 | Saisie MIDI | 🟡 Partiel | `packages/features/src/input/midi-input.ts` | Saisie pas à pas via Web MIDI ; temps réel + quantification à faire |
 | V1 | Voix multiples (1 à 4) | ✅ Fait | `packages/core/src/editor.ts` |  |
-| V1 | Reprises, 1re/2e fois, D.C., D.S., Coda | 🟡 Partiel | `apps/desktop/src/components/BarDialog.tsx` | Reprises et fins alternatives OK ; sauts D.C./D.S./Coda dans le modèle seulement |
+| V1 | Reprises, 1re/2e fois, D.C., D.S., Coda | ✅ Fait | `apps/desktop/src/components/BarDialog.tsx` | Saisie, affichage et lecture des renvois (Segno, Coda, Fine, To Coda, D.C./D.S. al Fine/al Coda) |
 | V1 | Sections et repères navigables | ✅ Fait | `apps/desktop/src/components/SectionsPanel.tsx` |  |
 | V1 | Carte de tempo et automations | 🟡 Partiel | `packages/core/src/model.ts` | Changements de tempo par mesure ; accelerando et volume/pan automatisés à faire |
-| V1 | Diagrammes d’accords | 🟡 Partiel | `packages/features/src/notation-pro/chords.ts` | Modèle + rendu ; éditeur et génération auto à faire |
+| V1 | Bibliothèque et diagrammes d’accords | ✅ Fait | `packages/core/src/chords.ts` | 18 types d’accords, doigtés calculés pour tout accordage ; saisie d’un accord en un clic |
+| MVP | Sélection à la souris et duplication de mesures | ✅ Fait | `apps/desktop/src/components/ScoreView.tsx` |  |
 | V1 | Paroles synchronisées | ⬜ Squelette | `packages/features/src/notation-pro/lyrics.ts` |  |
 | V1 | Instruments transpositeurs | 🟡 Partiel | `packages/core/src/instruments.ts` | Préréglages et modèle ; bascule son réel / écrit à faire |
 | V1 | Conducteur et parties séparées | ⬜ Squelette | `packages/features/src/notation-pro/parts.ts` |  |
@@ -45,8 +46,8 @@
 | Priorité | Fonctionnalité | État | Code | Remarque |
 | --- | --- | --- | --- | --- |
 | MVP | Hammer-on, pull-off, tapping | ✅ Fait | `packages/core/src/formats/alphatex.ts` |  |
-| MVP | Slides (6 types) | ✅ Fait | `packages/core/src/formats/alphatex.ts` |  |
-| MVP | Bends, release, pre-bend | ✅ Fait | `packages/core/src/formats/alphatex.ts` | Éditeur de courbe à faire |
+| MVP | Slides (6 types, direction au choix) | ✅ Fait | `apps/desktop/src/components/TechniqueMenu.tsx` |  |
+| MVP | Bends, release, pre-bend | ✅ Fait | `apps/desktop/src/components/TechniqueMenu.tsx` | ¼ à 2 tons ; éditeur de courbe libre à faire |
 | MVP | Vibrato léger / large | ✅ Fait | `packages/core/src/formats/alphatex.ts` |  |
 | MVP | Palm mute, dead note, let ring | ✅ Fait | `packages/core/src/formats/alphatex.ts` |  |
 | V1 | Harmoniques (5 types) | ✅ Fait | `packages/core/src/formats/alphatex.ts` |  |
@@ -69,8 +70,8 @@
 | MVP | Mixeur volume / pan / solo / mute | ✅ Fait | `apps/desktop/src/components/TrackPanel.tsx` |  |
 | MVP | Métronome et décompte | ✅ Fait | `apps/desktop/src/components/Transport.tsx` |  |
 | V1 | Rendu audio des techniques | 🟡 Partiel | `apps/desktop/src/audio/player.ts` | Assuré par le synthé alphaTab |
-| V1 | Banque de sons échantillonnés | ⬜ Squelette | `packages/features/src/audio/sound-library.ts` |  |
-| V1 | Amplis et effets | ⬜ Squelette | `apps/desktop/src-tauri/src/audio/effects.rs` |  |
+| V1 | Banque de sons échantillonnés | 🟡 Partiel | `apps/desktop/src/audio/player.ts` | GeneralUser GS pour guitares, basses, piano et batterie ; banques haut de gamme à faire |
+| V1 | Amplis et effets | 🟡 Partiel | `apps/desktop/src/audio/fx.ts` | Sons clean / crunch / distorsion par piste, réverbération générale ; simulation d’ampli par piste à faire |
 | V1 | Humanisation | ⬜ Squelette | `packages/features/src/audio/humanize.ts` |  |
 | V1 | Audio basse latence ASIO / CoreAudio | ⬜ Squelette | `apps/desktop/src-tauri/src/audio/mod.rs` |  |
 | V1 | Plugins VST3 / AU | ⬜ Squelette | `apps/desktop/src-tauri/src/plugins.rs` |  |

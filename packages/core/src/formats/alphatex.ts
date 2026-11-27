@@ -3,7 +3,7 @@
  * C'est la passerelle de rendu : le modèle Guitar Lab est la source de vérité,
  * alphaTex sert à le faire dessiner et jouer par alphaTab.
  */
-import type { Beat, Finger, MasterBar, Note, Song, Track } from '../model';
+import type { Beat, Direction, Finger, MasterBar, Note, Song, Track } from '../model';
 import { pitchName } from '../pitch';
 import { barCapacityTicks, ticksToDurations } from '../timing';
 
@@ -120,6 +120,20 @@ function restsFor(mb: MasterBar, drums: boolean): string {
     .join(' ');
 }
 
+/** Repères et renvois Guitar Lab → noms alphaTex (`\\jump`). */
+const JUMP_TEX: Record<Direction, string> = {
+  segno: 'Segno',
+  coda: 'Coda',
+  fine: 'Fine',
+  'da-capo': 'DaCapo',
+  'da-capo-al-fine': 'DaCapoAlFine',
+  'da-capo-al-coda': 'DaCapoAlCoda',
+  'dal-segno': 'DalSegno',
+  'dal-segno-al-fine': 'DalSegnoAlFine',
+  'dal-segno-al-coda': 'DalSegnoAlCoda',
+  'to-coda': 'DaCoda',
+};
+
 function masterBarTex(mb: MasterBar, prev: MasterBar | undefined, index: number): string {
   const out: string[] = [];
   if (index === 0 || !prev || prev.timeSignature[0] !== mb.timeSignature[0] || prev.timeSignature[1] !== mb.timeSignature[1])
@@ -133,6 +147,7 @@ function masterBarTex(mb: MasterBar, prev: MasterBar | undefined, index: number)
   if (mb.repeat?.start) out.push('\\ro');
   if (mb.repeat?.alternateEndings?.length) out.push(`\\ae (${mb.repeat.alternateEndings.join(' ')})`);
   if (mb.repeat?.endCount) out.push(`\\rc ${mb.repeat.endCount}`);
+  for (const d of mb.directions ?? []) if (JUMP_TEX[d]) out.push(`\\jump ${JUMP_TEX[d]}`);
   if (mb.tripletFeel && mb.tripletFeel !== 'none') out.push(`\\tf ${mb.tripletFeel === 'eighth' ? 'triplet8th' : 'triplet16th'}`);
   return out.join(' ');
 }

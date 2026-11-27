@@ -212,6 +212,44 @@ export function toggleNoteEffect<K extends keyof NoteEffects>(s: EditorState, ke
   });
 }
 
+/** Fixe (ou retire avec `undefined`) un effet de note, sans bascule. */
+export function setNoteEffect<K extends keyof NoteEffects>(s: EditorState, key: K, value: NoteEffects[K] | undefined): EditorState {
+  return updateNote(s, (n) => {
+    const fx = n.effects as NoteEffects;
+    if (value === undefined) delete fx[key];
+    else fx[key] = value;
+  });
+}
+
+/**
+ * Pose un accord entier sur le temps du curseur : `frets[k]` est la frette de la
+ * corde k+1 (1 = aiguë), -1 pour une corde non jouée. Les notes déjà présentes
+ * sur ce temps sont remplacées ; le nom peut être affiché au-dessus.
+ */
+export function applyChord(s: EditorState, frets: number[], name?: string): EditorState {
+  const c = s.cursor;
+  const st = withSong(s, (song) => {
+    const track = song.tracks[c.track];
+    const beat = beatAtCursor(song, c, s.inputDuration, true)!;
+    beat.notes = [];
+    frets.forEach((f, k) => {
+      if (f >= 0 && k < track.tuning.length) beat.notes.push(createNote(k + 1, f) as Draft<Note>);
+    });
+    if (name) {
+      beat.effects.chord = name;
+      const diagram = { name, frets: frets.slice(0, track.tuning.length), firstFret: Math.max(1, Math.min(...frets.filter((f) => f > 0), 99)) };
+      const existing = track.chords.findIndex((ch) => ch.name === name);
+      if (existing >= 0) track.chords[existing] = diagram;
+      else track.chords.push(diagram);
+    } else {
+      delete beat.effects.chord;
+    }
+  });
+  // Le curseur se place sur la plus grave des cordes jouées.
+  const played = frets.map((f, k) => (f >= 0 ? k + 1 : 0)).filter(Boolean);
+  return played.length ? setCursor(st, { string: Math.max(...played) }) : st;
+}
+
 export function toggleTie(s: EditorState): EditorState {
   return updateNote(s, (n) => {
     n.tie = !n.tie || undefined;
@@ -314,6 +352,31 @@ export function insertBarAfter(s: EditorState, barIndex: number, count = 1): Edi
       for (const t of song.tracks) t.bars.splice(barIndex + 1, 0, createBar());
     }
   });
+}
+
+/**
+ * Duplique les mesures `from`..`to` (toutes les pistes) juste après `to`.
+ * Les copies gardent signature, armure, tempo et feeling ; les sections, reprises
+ * et renvois ne sont pas recopiés pour ne pas dérouter la lecture.
+ */
+export function duplicateBars(s: EditorState, from: number, to = from): EditorState {
+  const [a, b] = from <= to ? [from, to] : [to, from];
+  // Copies préparées hors du brouillon immer (structuredClone ne traverse pas ses proxys).
+  const masters = s.song.masterBars.slice(a, b + 1).map((mb) => {
+    const copy = structuredClone(mb);
+    delete copy.section;
+    delete copy.repeat;
+    delete copy.directions;
+    return copy;
+  });
+  const barsByTrack = s.song.tracks.map((t) =>
+    t.bars.slice(a, b + 1).map((bar): Bar => ({ voices: bar.voices.map((v) => ({ beats: cloneBeatsWithNewIds(v.beats) })) })),
+  );
+  const st = withSong(s, (song) => {
+    song.masterBars.splice(b + 1, 0, ...masters);
+    song.tracks.forEach((t, ti) => t.bars.splice(b + 1, 0, ...barsByTrack[ti]));
+  });
+  return { ...setCursor(st, { bar: b + 1, beat: 0 }), anchor: null };
 }
 
 export function insertBarBefore(s: EditorState, barIndex: number): EditorState {
@@ -579,6 +642,13 @@ export function updateSongMeta(s: EditorState, patch: Partial<Song['meta']>): Ed
 export function setSongTempo(s: EditorState, tempo: number): EditorState {
   return withSong(s, (song) => {
     song.tempo = Math.max(10, Math.min(400, Math.round(tempo)));
+  });
+}
+
+/** Réverbération générale de la lecture (0 à 1). */
+export function setSongReverb(s: EditorState, reverb: number): EditorState {
+  return withSong(s, (song) => {
+    song.reverb = Math.max(0, Math.min(1, Math.round(reverb * 100) / 100));
   });
 }
 

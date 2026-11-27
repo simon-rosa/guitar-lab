@@ -1,7 +1,11 @@
 /** Barre de transport : lecture, boucle, vitesse, métronome, décompte. */
-import { barFillStatus, currentBeat, setSongTempo, tempoAtBars } from '@guitar-lab/core';
-import { durationName } from './durations';
 import { useEffect, useState } from 'react';
+import { barFillStatus, currentBeat, setSongReverb, setSongTempo, tempoAtBars } from '@guitar-lab/core';
+import { DEFAULT_REVERB, setReverb } from '../audio/fx';
+import { player } from '../audio/player';
+import { runAction } from '../app/actions';
+import { useApp, useEditor } from '../app/store';
+import { durationName } from './durations';
 
 /** Champ de tempo : on peut taper librement, la valeur est validée à la sortie ou sur Entrée. */
 function TempoInput({ value }: { value: number }) {
@@ -31,9 +35,37 @@ function TempoInput({ value }: { value: number }) {
     />
   );
 }
-import { player } from '../audio/player';
-import { runAction } from '../app/actions';
-import { useApp, useEditor } from '../app/store';
+/** Réverbération : entendue en direct pendant le réglage, enregistrée dans le morceau au relâchement. */
+function ReverbControl({ value }: { value: number }) {
+  const [v, setV] = useState(value);
+  useEffect(() => setV(value), [value]);
+  const commit = () => {
+    if (v !== value) useApp.getState().edit((st) => setSongReverb(st, v));
+  };
+  return (
+    <label className="speed" title="Réverbération (effet de salle) appliquée à toute la lecture">
+      Réverb
+      <input
+        type="range"
+        min={0}
+        max={1}
+        step={0.05}
+        value={v}
+        onChange={(e) => {
+          const n = Number(e.target.value);
+          setV(n);
+          setReverb(n);
+        }}
+        onPointerUp={commit}
+        onKeyUp={commit}
+        onBlur={commit}
+        aria-valuetext={`${Math.round(v * 100)} %`}
+      />
+      <output>{Math.round(v * 100)} %</output>
+    </label>
+  );
+}
+
 
 const fmt = (ms: number) => {
   const s = Math.max(0, Math.floor(ms / 1000));
@@ -92,6 +124,7 @@ export function Transport() {
           />
           <output>{Math.round(p.speed * 100)} %</output>
         </label>
+        <ReverbControl value={s.song.reverb ?? DEFAULT_REVERB} />
         <button type="button" className={`tool${p.metronome ? ' active' : ''}`} title="Métronome" aria-pressed={p.metronome} onClick={() => player.setMetronome(!p.metronome)}>
           𝅘𝅥 ◁
         </button>

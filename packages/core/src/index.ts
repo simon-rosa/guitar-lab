@@ -10,3 +10,4 @@ export * from './formats/native';
 export * from './formats/alphatex';
 export * from './formats/ascii';
 export * from './formats/midi';
+export * from './chords';
