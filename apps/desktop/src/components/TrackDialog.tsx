@@ -104,10 +104,6 @@ export function TrackDialog() {
             <input type="text" value={tuningText} onChange={(e) => { setTuningText(e.target.value); setError(null); }} />
           </Field>
           <label className="check"><input type="checkbox" checked={keepPitch} onChange={(e) => setKeepPitch(e.target.checked)} /> Garder la hauteur des notes (recalculer les frettes)</label>
-          <div className="inline">
-            <label className="check compact"><input type="checkbox" checked={showTab} onChange={(e) => setShowTab(e.target.checked)} /> Tablature</label>
-            <label className="check compact"><input type="checkbox" checked={showStd} onChange={(e) => setShowStd(e.target.checked)} /> Partition</label>
-          </div>
         </>
       )}
       {error && <p className="error">{error}</p>}

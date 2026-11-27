@@ -19,7 +19,7 @@ export type ActionId =
   | 'transpose.up' | 'transpose.down'
   | 'play.toggle' | 'play.fromCursor' | 'play.loop'
   | 'file.new' | 'file.open' | 'file.save' | 'file.print'
-  | 'view.zoomIn' | 'view.zoomOut' | 'view.commandPalette';
+  | 'view.zoomIn' | 'view.zoomOut' | 'view.commandPalette' | 'view.help';
 
 export interface ActionInfo {
   id: ActionId;
@@ -89,6 +89,7 @@ export const ACTIONS: ActionInfo[] = [
   { id: 'view.zoomIn', label: 'Zoom avant', group: 'Affichage' },
   { id: 'view.zoomOut', label: 'Zoom arrière', group: 'Affichage' },
   { id: 'view.commandPalette', label: 'Palette de commandes', group: 'Affichage' },
+  { id: 'view.help', label: 'Aide et guide de démarrage', group: 'Affichage' },
 ];
 
 export type Keymap = Partial<Record<ActionId, string[]>>;
@@ -156,6 +157,7 @@ export const DEFAULT_KEYMAP: Keymap = {
   'view.zoomIn': ['Ctrl+='],
   'view.zoomOut': ['Ctrl+-'],
   'view.commandPalette': ['Ctrl+k'],
+  'view.help': ['F1', '?'],
 };
 
 /** Préréglage pour les utilisateurs venant de Guitar Pro (touches les plus courantes). */

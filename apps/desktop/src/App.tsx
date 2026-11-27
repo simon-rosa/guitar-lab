@@ -6,6 +6,7 @@ import { useApp, useEditor } from './app/store';
 import { BarDialog } from './components/BarDialog';
 import { CommandPalette } from './components/CommandPalette';
 import { Fretboard } from './components/Fretboard';
+import { HelpDialog } from './components/HelpDialog';
 import { MenuBar } from './components/MenuBar';
 import { Modal } from './components/Modal';
 import { RoadmapDialog } from './components/RoadmapDialog';
@@ -40,7 +41,7 @@ function About() {
     <Modal title="Guitar Lab">
       <p>Éditeur de tablatures et partitions pour guitaristes, bassistes et musiciens professionnels.</p>
       <p className="hint">
-        Version 0.1.0 · {s.done} fonctionnalités faites, {s.partial} partielles, {s.skeleton} en squelette sur {s.total}.
+        Version 0.2.0 · {s.done} fonctionnalités faites, {s.partial} partielles, {s.skeleton} en squelette sur {s.total}.
         Rendu et lecture : alphaTab (MPL-2.0), police Bravura (SIL OFL), sons SONiVOX.
       </p>
     </Modal>
@@ -55,14 +56,21 @@ export function App() {
   const dirty = useApp((s) => s.dirty);
   const fileName = useApp((s) => s.fileName);
   const title = useEditor().song.meta.title;
+  const playing = useApp((s) => s.player.playing);
 
   useEffect(() => {
     restoreAutosave();
+    if (!useApp.getState().welcomeDone) useApp.getState().openDialog('help');
     const stopSave = startAutosave();
     const stopKeys = installKeyboard(() => scrollRef.current);
+    // Quelle que soit la façon de fermer le guide (bouton, ✕, Échap), il ne se rouvre plus tout seul.
+    const stopWelcome = useApp.subscribe((s, prev) => {
+      if (prev.dialog === 'help' && s.dialog !== 'help' && !s.welcomeDone) s.setPrefs({ welcomeDone: true });
+    });
     return () => {
       stopSave();
       stopKeys();
+      stopWelcome();
     };
   }, []);
 
@@ -75,7 +83,7 @@ export function App() {
   }, [dirty, title]);
 
   return (
-    <div className="app">
+    <div className={`app${playing ? ' playing' : ''}`}>
       <MenuBar
         right={
           <button type="button" className="doc-title" onClick={() => useApp.getState().openDialog('song')} title="Informations du morceau">
@@ -105,6 +113,7 @@ export function App() {
       {dialog === 'tuner' && <TunerDialog />}
       {dialog === 'roadmap' && <RoadmapDialog />}
       {dialog === 'about' && <About />}
+      {dialog === 'help' && <HelpDialog />}
       <Toast />
     </div>
   );

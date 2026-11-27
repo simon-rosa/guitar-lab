@@ -21,11 +21,19 @@ export function startAutosave(): () => void {
       /* quota dépassé ou stockage indisponible */
     }
   };
+  // Avant de quitter : on sauvegarde, et on prévient si le travail n'est pas enregistré.
+  const onUnload = (e: BeforeUnloadEvent) => {
+    save();
+    if (useApp.getState().dirty) {
+      e.preventDefault();
+      e.returnValue = '';
+    }
+  };
   const id = window.setInterval(save, INTERVAL_MS);
-  window.addEventListener('beforeunload', save);
+  window.addEventListener('beforeunload', onUnload);
   return () => {
     window.clearInterval(id);
-    window.removeEventListener('beforeunload', save);
+    window.removeEventListener('beforeunload', onUnload);
   };
 }
 

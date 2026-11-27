@@ -30,6 +30,7 @@ import {
   addTrack,
   removeTrack,
   deleteBars,
+  updateMasterBar,
 } from '../src';
 
 const fresh = () => createEditorState(createSong({ bars: 2 }));
@@ -184,5 +185,16 @@ describe('reprises', () => {
     song.masterBars[1].repeat = { alternateEndings: [1], endCount: 2 };
     song.masterBars[2].repeat = { alternateEndings: [2] };
     expect(playbackBarOrder(song)).toEqual([0, 1, 0, 2, 3]);
+  });
+});
+
+describe('propriétés de mesure', () => {
+  it('propage la signature sans effacer les sections et tempos suivants', () => {
+    let s = createEditorState(createSong({ bars: 4 }));
+    s = updateMasterBar(s, 2, { section: { marker: 'B', text: 'Refrain' }, tempo: 140 });
+    s = updateMasterBar(s, 0, { timeSignature: [3, 4] }, true);
+    expect(s.song.masterBars.map((m) => m.timeSignature.join('/'))).toEqual(['3/4', '3/4', '3/4', '3/4']);
+    expect(s.song.masterBars[2].section?.text).toBe('Refrain');
+    expect(s.song.masterBars[2].tempo).toBe(140);
   });
 });

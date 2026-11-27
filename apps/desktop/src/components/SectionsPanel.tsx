@@ -19,7 +19,7 @@ export function SectionsPanel() {
         <h2 id="sections-title">Sections</h2>
       </header>
       {sections.length === 0 ? (
-        <p className="hint">Aucune section. Ajoutez-en une depuis les propriétés de mesure (bouton « 4/4… »).</p>
+        <p className="hint">Aucune section. Pour marquer une intro, un couplet ou un refrain : bouton « Plus… » de la barre Mesure.</p>
       ) : (
         <ul className="section-list">
           {sections.map(({ i, section }) => (

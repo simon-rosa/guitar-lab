@@ -46,9 +46,9 @@ const CO: Family = 'Collaboration et cloud';
 
 export const FEATURES: Feature[] = [
   // ------------------------------------------------------------ Édition
-  f(ED, 'MVP', 'done', 'linked-views', 'Vue tablature + partition liées', 'apps/desktop/src/components/ScoreView.tsx'),
+  f(ED, 'MVP', 'done', 'linked-views', 'Vue tablature + partition liées (tablature seule par défaut)', 'apps/desktop/src/components/ScoreView.tsx'),
   f(ED, 'MVP', 'done', 'keyboard-entry', 'Saisie au clavier', 'packages/core/src/editor.ts + keymap.ts'),
-  f(ED, 'MVP', 'done', 'mouse-entry', 'Saisie à la souris', 'apps/desktop/src/components/Toolbar.tsx'),
+  f(ED, 'MVP', 'done', 'mouse-entry', 'Saisie à la souris (clic sur la corde + sélecteur de frette)', 'apps/desktop/src/components/FretPicker.tsx'),
   f(ED, 'MVP', 'done', 'rhythms', 'Durées, points, n-olets', 'packages/core/src/editor.ts'),
   f(ED, 'MVP', 'done', 'rests', 'Silences et remplissage automatique', 'packages/core/src/editor.ts', 'Pauses multi-mesures : à faire'),
   f(ED, 'MVP', 'done', 'bars', 'Signature, armure, anacrouse', 'apps/desktop/src/components/BarDialog.tsx'),

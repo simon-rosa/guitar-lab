@@ -122,6 +122,7 @@ export function runAction(id: ActionId): void {
     case 'view.zoomIn': return app.setPrefs({ zoom: Math.min(2, Math.round((app.zoom + 0.1) * 10) / 10) });
     case 'view.zoomOut': return app.setPrefs({ zoom: Math.max(0.5, Math.round((app.zoom - 0.1) * 10) / 10) });
     case 'view.commandPalette': return app.openDialog('palette');
+    case 'view.help': return app.openDialog('help');
   }
 }
 

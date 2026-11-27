@@ -32,8 +32,9 @@ npm run docs:features  # régénère docs/FEATURES.md depuis le registre
 
 Tout le MVP du cahier des charges est implémenté et utilisable (29 features faites, 1 partielle sur 30) :
 
+- **Saisie à la souris.** Cliquez sur une corde de la grande tablature : un sélecteur propose les frettes 0 à 24 (avec le nom de la note), les durées, silence et note étouffée. Le curseur avance tout seul pour enchaîner une mélodie.
 - **Saisie au clavier sans souris.** Chiffres = frette (deux chiffres rapides = 10 à 36), flèches = temps et cordes, `=`/`-` = durée. Les techniques ont des lettres (`h` hammer, `s` slide, `b` bend, `v` vibrato, `p` palm mute, `x` étouffée…).
-- **Saisie à la souris** avec la palette d'outils et un clic sur le manche virtuel.
+- **Barre d'outils claire** : durées nommées (ronde, blanche, noire…), techniques en toutes lettres, signature rythmique et tempo modifiables directement. Guide de démarrage au premier lancement (F1 pour le rouvrir).
 - **Tablature et partition liées**, multi-pistes, 4 voix, accordages de 4 à 10 cordes, capo, transposition qui change de corde au besoin.
 - **Mesures** : signature, armure, tempo, reprises, fins alternatives, sections, anacrouse, remplissage automatique par des silences.
 - **Édition** : copier/couper/coller sur plusieurs mesures, annulation illimitée.

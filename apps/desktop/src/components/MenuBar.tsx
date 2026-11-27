@@ -139,6 +139,10 @@ export function MenuBar({ right }: { right?: ReactNode }) {
           sep,
           { label: 'Page', checked: st.layout === 'page', run: () => st.setPrefs({ layout: 'page' }) },
           { label: 'Parchemin horizontal', checked: st.layout === 'horizontal', run: () => st.setPrefs({ layout: 'horizontal' }) },
+          { label: 'Tablature seule', checked: st.notation === 'tab', run: () => st.setPrefs({ notation: 'tab' }) },
+          { label: 'Tablature + partition', checked: st.notation === 'both', run: () => st.setPrefs({ notation: 'both' }) },
+          { label: 'Partition seule', checked: st.notation === 'score', run: () => st.setPrefs({ notation: 'score' }) },
+          sep,
           { label: 'Toutes les pistes (conducteur)', checked: st.showAllTracks, run: () => st.setPrefs({ showAllTracks: !st.showAllTracks }) },
           { label: 'Manche virtuel', checked: st.showFretboard, run: () => st.setPrefs({ showFretboard: !st.showFretboard }) },
           sep,
@@ -158,6 +162,8 @@ export function MenuBar({ right }: { right?: ReactNode }) {
       <Menu
         label="Aide"
         items={[
+          { label: 'Guide de démarrage et aide-mémoire', action: 'view.help' },
+          { label: 'Raccourcis clavier…', run: open('shortcuts') },
           { label: 'Feuille de route des fonctionnalités', run: open('roadmap') },
           { label: 'À propos de Guitar Lab', run: open('about') },
         ]}

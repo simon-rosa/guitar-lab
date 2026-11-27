@@ -321,20 +321,23 @@ export function deleteBars(s: EditorState, from: number, to = from): EditorState
   return setCursor(st, { bar: Math.min(from, st.song.masterBars.length - 1), beat: 0 });
 }
 
+/** Propriétés qui « durent » d'une mesure à l'autre (les autres sont ponctuelles). */
+const PERSISTENT_KEYS = new Set<keyof MasterBar>(['timeSignature', 'keySignature', 'keyMode', 'tripletFeel']);
+
+/**
+ * Modifie une mesure. Avec `applyToFollowing`, seules les propriétés durables
+ * (signature, armure, feeling) sont propagées aux mesures suivantes ; leurs
+ * sections, tempos et reprises restent intacts.
+ */
 export function updateMasterBar(s: EditorState, barIndex: number, patch: Partial<MasterBar>, applyToFollowing = false): EditorState {
   return withSong(s, (song) => {
     const end = applyToFollowing ? song.masterBars.length : barIndex + 1;
     for (let i = barIndex; i < end; i++) {
       const mb = song.masterBars[i];
-      for (const [k, v] of Object.entries(patch)) {
+      for (const [k, v] of Object.entries(patch) as Array<[keyof MasterBar, unknown]>) {
+        if (i > barIndex && !PERSISTENT_KEYS.has(k)) continue;
         if (v === undefined) delete (mb as Record<string, unknown>)[k];
         else (mb as Record<string, unknown>)[k] = v;
-      }
-      // Seule la première mesure garde les marqueurs ponctuels.
-      if (i > barIndex) {
-        delete mb.tempo;
-        delete mb.repeat;
-        delete mb.section;
       }
     }
   });

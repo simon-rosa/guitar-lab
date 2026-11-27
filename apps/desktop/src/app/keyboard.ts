@@ -22,6 +22,11 @@ export function installKeyboard(getScrollElement: () => HTMLElement | null): () 
       if (e.key === 'Escape') app.openDialog(null);
       return;
     }
+    if (app.picker && e.key === 'Escape') {
+      app.setPicker(false);
+      e.preventDefault();
+      return;
+    }
     if (isTyping(e.target)) return;
     if (app.keymap !== keymap) {
       keymap = app.keymap;

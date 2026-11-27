@@ -183,7 +183,7 @@ kbd {
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
-  z-index: 50;
+  z-index: 2500;
   min-width: 300px;
   background: var(--bg-2);
   border: 1px solid var(--line);
@@ -262,19 +262,49 @@ kbd {
 /* ------------------------------------------------------------ toolbar */
 
 .toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  display: grid;
+  gap: 4px;
   padding: 6px 10px;
   background: var(--bg-2);
   border-bottom: 1px solid var(--line);
 }
 
+.toolbar-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.toolbar-row.techniques {
+  gap: 3px;
+  padding-top: 4px;
+  border-top: 1px solid var(--line);
+}
+
+.group-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+  margin: 0 4px 0 2px;
+}
+
+.spacer {
+  flex: 1;
+}
+
 .tool-group {
   display: flex;
+  align-items: center;
   gap: 2px;
-  padding-right: 6px;
+  padding-right: 8px;
   border-right: 1px solid var(--line);
+}
+
+.view-group {
+  margin-left: auto;
+  gap: 4px;
 }
 
 .tool-group:last-child {
@@ -298,6 +328,81 @@ kbd {
 
 .tool:hover:not(:disabled) {
   background: var(--bg-3);
+}
+
+.tool.duration {
+  display: grid;
+  grid-template-rows: 22px 13px;
+  justify-items: center;
+  align-items: center;
+  height: 44px;
+  min-width: 52px;
+  padding: 2px 4px;
+}
+
+.tool.duration .glyph {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.tool.duration .name {
+  font-size: 10.5px;
+  color: var(--ink-2);
+}
+
+.tool.duration.active .name {
+  color: var(--accent);
+}
+
+.tool.text {
+  font-size: 12.5px;
+  padding: 0 9px;
+  border-color: var(--line);
+}
+
+.ts-select {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 5px 6px;
+  font-weight: 600;
+}
+
+.segmented {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  overflow: hidden;
+}
+
+.segmented button {
+  background: none;
+  border: 0;
+  padding: 6px 10px;
+  font-size: 12.5px;
+}
+
+.segmented button + button {
+  border-left: 1px solid var(--line);
+}
+
+.segmented button.on {
+  background: var(--accent);
+  color: #fff;
+}
+
+.zoom-value {
+  font-size: 12px;
+  color: var(--ink-2);
+  min-width: 38px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.help-btn {
+  border: 1px solid var(--line) !important;
+  border-radius: 50% !important;
+  font-weight: 700;
 }
 
 .tool.active {
@@ -556,6 +661,14 @@ kbd {
 .score-wrap {
   position: relative;
   min-height: 100%;
+  /* De la place sous la partition pour que le sélecteur de frette reste visible. */
+  padding-bottom: 380px;
+}
+
+/* À l'arrêt, seul le curseur d'édition est visible. */
+.app:not(.playing) .at-cursor-bar,
+.app:not(.playing) .at-cursor-beat {
+  visibility: hidden;
 }
 
 .score-host {
@@ -566,6 +679,12 @@ kbd {
   position: absolute;
   inset: 0;
   pointer-events: none;
+  z-index: 1500;
+}
+
+/* Les curseurs de lecture d'alphaTab restent sous nos fenêtres et menus. */
+.at-cursors {
+  z-index: 1000 !important;
 }
 
 .beat-cursor {
@@ -584,11 +703,198 @@ kbd {
 
 .string-mark {
   position: absolute;
-  height: 12px;
-  border: 2px solid var(--cursor-line);
-  border-radius: 4px;
+  height: 24px;
+  border: 2.5px solid var(--cursor-line);
+  border-radius: 6px;
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.score-wrap {
+  cursor: crosshair;
+}
+
+/* Indication de départ */
+.empty-hint {
+  position: sticky;
+  top: 8px;
+  z-index: 1600;
+  margin: 8px auto 0;
+  width: fit-content;
+  max-width: 90%;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: var(--bg-3);
+  border: 1px solid var(--accent);
+  font-size: 13.5px;
+  box-shadow: var(--shadow);
+}
+
+/* Sélecteur de frette */
+.fret-picker {
+  position: absolute;
+  z-index: 2000;
+  width: 318px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 9px;
+  display: grid;
+  gap: 6px;
+  cursor: default;
+}
+
+.fret-picker header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fret-picker header .where {
+  font-size: 12px;
+  color: var(--ink-2);
+  margin-right: auto;
+}
+
+.fret-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+}
+
+.fret-grid button,
+.drum-grid button,
+.picker-row button {
   background: var(--bg);
-  opacity: 0.85;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 3px 0 2px;
+  line-height: 1.1;
+}
+
+.fret-grid button:hover,
+.drum-grid button:hover,
+.picker-row button:hover {
+  border-color: var(--accent);
+}
+
+.fret-grid button.on,
+.drum-grid button.on,
+.picker-row button.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.fret-grid .fret {
+  display: block;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.fret-grid .pitch {
+  display: block;
+  font-size: 10px;
+  color: var(--ink-2);
+}
+
+.fret-grid button.on .pitch {
+  color: #fff;
+}
+
+.drum-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+
+.drum-grid button {
+  font-size: 12px;
+  padding: 7px 2px;
+}
+
+.picker-row {
+  display: flex;
+  gap: 4px;
+}
+
+.picker-row button {
+  flex: 1;
+  font-size: 12.5px;
+  padding: 6px 4px;
+}
+
+.picker-row.durations .glyph {
+  font-size: 19px;
+  line-height: 1;
+}
+
+.advance {
+  font-size: 12px !important;
+}
+
+/* Guide de démarrage */
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.steps li {
+  display: grid;
+  grid-template-columns: 32px 1fr;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg);
+}
+
+.steps .step-no {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+}
+
+.steps p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.cheat td:first-child {
+  width: 150px;
+}
+
+.cheat td {
+  text-align: left !important;
+}
+
+.tempo {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  margin-left: 8px;
+}
+
+.tempo input {
+  width: 62px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 4px 6px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .selection-box {
@@ -786,11 +1092,11 @@ kbd {
 .modal-backdrop {
   position: fixed;
   inset: 0;
+  z-index: 3000 !important;
   background: rgba(0, 0, 0, 0.45);
   display: grid;
   place-items: start center;
   padding-top: 8vh;
-  z-index: 100;
 }
 
 .modal {
@@ -1138,6 +1444,7 @@ legend {
 /* Notifications */
 .toast {
   position: fixed;
+  z-index: 3500 !important;
   bottom: 64px;
   left: 50%;
   transform: translateX(-50%);

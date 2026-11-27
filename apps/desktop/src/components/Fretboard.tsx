@@ -2,7 +2,7 @@
  * Manche virtuel : montre les notes sous le curseur (ou en cours de lecture)
  * et sert à la saisie à la souris — un clic écrit la frette sur la corde.
  */
-import { pitchName, setCursor, setFret } from '@guitar-lab/core';
+import { moveRight, pitchName, setCursor, setFret } from '@guitar-lab/core';
 import { useApp, useEditor } from '../app/store';
 
 const FRETS = 24;
@@ -28,8 +28,11 @@ export function Fretboard() {
   const y = (str: number) => 12 + (str - 1) * rowH + rowH / 2;
 
   const click = (string: number, fret: number) => {
-    const { edit } = useApp.getState();
-    edit((st) => setFret(setCursor(st, { string }), fret));
+    const { edit, autoAdvance } = useApp.getState();
+    edit((st) => {
+      const next = setFret(setCursor(st, { string }), fret);
+      return autoAdvance ? moveRight(next) : next;
+    });
   };
 
   return (

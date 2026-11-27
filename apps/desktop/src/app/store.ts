@@ -21,7 +21,9 @@ import {
 
 export type Theme = 'light' | 'dark' | 'stage';
 export type LayoutMode = 'page' | 'horizontal';
-export type DialogId = 'bar' | 'track' | 'song' | 'shortcuts' | 'palette' | 'tuner' | 'roadmap' | 'about' | null;
+/** Portées affichées : tablature seule (par défaut), partition seule, ou les deux. */
+export type NotationMode = 'tab' | 'both' | 'score';
+export type DialogId = 'bar' | 'track' | 'song' | 'shortcuts' | 'palette' | 'tuner' | 'roadmap' | 'about' | 'help' | null;
 
 export interface PlayerUiState {
   ready: boolean;
@@ -47,7 +49,14 @@ interface Prefs {
   showAllTracks: boolean;
   keymap: Keymap;
   showFretboard: boolean;
+  notation: NotationMode;
+  /** Après un choix de frette dans le sélecteur, passer au temps suivant. */
+  autoAdvance: boolean;
+  /** L'aide de démarrage a été fermée. */
+  welcomeDone: boolean;
 }
+
+
 
 export interface AppState extends Prefs {
   history: History<EditorState>;
@@ -58,6 +67,8 @@ export interface AppState extends Prefs {
   toast: { text: string; kind: 'info' | 'error'; id: number } | null;
   renderError: string | null;
   player: PlayerUiState;
+  /** Sélecteur de frette ouvert sous le curseur. */
+  picker: boolean;
 
   /** Modification du document (crée une entrée d'annulation). */
   edit: (fn: (s: EditorState) => EditorState) => void;
@@ -73,12 +84,23 @@ export interface AppState extends Prefs {
   notify: (text: string, kind?: 'info' | 'error') => void;
   setClipboard: (beats: Beat[]) => void;
   setRenderError: (e: string | null) => void;
+  setPicker: (open: boolean) => void;
 }
 
 const PREFS_KEY = 'guitar-lab:prefs';
 
 function loadPrefs(): Prefs {
-  const defaults: Prefs = { theme: 'dark', zoom: 1, layout: 'page', showAllTracks: false, keymap: DEFAULT_KEYMAP, showFretboard: true };
+  const defaults: Prefs = {
+    theme: 'dark',
+    zoom: 1.1,
+    layout: 'page',
+    showAllTracks: false,
+    keymap: DEFAULT_KEYMAP,
+    showFretboard: true,
+    notation: 'tab',
+    autoAdvance: true,
+    welcomeDone: false,
+  };
   try {
     const raw = localStorage.getItem(PREFS_KEY);
     if (!raw) return defaults;
@@ -142,13 +164,25 @@ export const useApp = create<AppState>((set, get) => ({
   setPrefs: (p) => {
     set(p);
     const s = get();
-    savePrefs({ theme: s.theme, zoom: s.zoom, layout: s.layout, showAllTracks: s.showAllTracks, keymap: s.keymap, showFretboard: s.showFretboard });
+    savePrefs({
+      theme: s.theme,
+      zoom: s.zoom,
+      layout: s.layout,
+      showAllTracks: s.showAllTracks,
+      keymap: s.keymap,
+      showFretboard: s.showFretboard,
+      notation: s.notation,
+      autoAdvance: s.autoAdvance,
+      welcomeDone: s.welcomeDone,
+    });
   },
   setPlayer: (p) => set((st) => ({ player: { ...st.player, ...p } })),
   openDialog: (dialog) => set({ dialog }),
   notify: (text, kind = 'info') => set({ toast: { text, kind, id: ++toastId } }),
   setClipboard: (clipboard) => set({ clipboard }),
   setRenderError: (renderError) => set({ renderError }),
+  picker: false,
+  setPicker: (picker) => set({ picker }),
 }));
 
 /** Raccourci : état d'édition courant. */

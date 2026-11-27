@@ -1,5 +1,36 @@
 /** Barre de transport : lecture, boucle, vitesse, métronome, décompte. */
-import { barFillStatus, currentBeat, tempoAtBars } from '@guitar-lab/core';
+import { barFillStatus, currentBeat, setSongTempo, tempoAtBars } from '@guitar-lab/core';
+import { durationName } from './durations';
+import { useEffect, useState } from 'react';
+
+/** Champ de tempo : on peut taper librement, la valeur est validée à la sortie ou sur Entrée. */
+function TempoInput({ value }: { value: number }) {
+  const [text, setText] = useState(String(value));
+  useEffect(() => setText(String(value)), [value]);
+  const commit = () => {
+    const v = Math.round(Number(text));
+    if (v >= 20 && v <= 400) useApp.getState().edit((st) => setSongTempo(st, v));
+    else setText(String(value));
+  };
+  return (
+    <input
+      type="number"
+      min={20}
+      max={400}
+      value={text}
+      aria-label="Tempo du morceau (BPM)"
+      onChange={(e) => setText(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+        if (e.key === 'Escape') {
+          setText(String(value));
+          (e.target as HTMLInputElement).blur();
+        }
+      }}
+    />
+  );
+}
 import { player } from '../audio/player';
 import { runAction } from '../app/actions';
 import { useApp, useEditor } from '../app/store';
@@ -9,7 +40,6 @@ const fmt = (ms: number) => {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 };
 
-const DURATION_NAMES: Record<number, string> = { 1: 'ronde', 2: 'blanche', 4: 'noire', 8: 'croche', 16: 'double croche', 32: 'triple croche', 64: 'quadruple croche' };
 
 export function Transport() {
   const p = useApp((s) => s.player);
@@ -44,7 +74,12 @@ export function Transport() {
           <input type="checkbox" checked={p.progressiveLoop} onChange={(e) => useApp.getState().setPlayer({ progressiveLoop: e.target.checked })} />
           +5 %/tour
         </label>
-        <label className="speed">
+        <label className="tempo" title="Tempo du morceau en battements par minute (noires par minute)">
+          ♩ =
+          <TempoInput value={s.song.tempo} />
+          BPM
+        </label>
+        <label className="speed" title="Ralentir ou accélérer la lecture sans changer le morceau">
           Vitesse
           <input
             type="range"
@@ -72,8 +107,8 @@ export function Transport() {
         <span>Temps {s.cursor.beat + 1}</span>
         <span>Corde {s.cursor.string}</span>
         <span>Voix {s.cursor.voice + 1}</span>
-        <span>{DURATION_NAMES[beat?.duration ?? s.inputDuration]}</span>
-        <span>{mb.timeSignature.join('/')} · ♩ = {tempo}</span>
+        <span>{durationName(beat?.duration ?? s.inputDuration)}</span>
+        <span>{mb.timeSignature.join('/')}{tempo !== s.song.tempo ? ` · ♩ = ${tempo} ici` : ''}</span>
         <span className={`fill ${fill}`}>{{ empty: 'mesure vide', incomplete: 'incomplète', full: 'complète', overfull: 'trop pleine' }[fill]}</span>
         {s.anchor && <span className="sel">Sélection</span>}
       </div>

@@ -15,7 +15,13 @@ export interface RenderOptions {
   zoom: number;
   layout: 'page' | 'horizontal';
   dark: boolean;
+  /** Portées affichées pour les instruments à cordes. */
+  notation: 'tab' | 'both' | 'score';
 }
+
+/** Espacement des lignes de tablature (alphaTab : 13 par défaut) : plus aéré, plus facile à viser. */
+const TAB_LINE_SPACING = 20;
+const TAB_FONT_SIZE = 17;
 
 const MIXER_KEYS = new Set(['volume', 'pan', 'mute', 'solo']);
 
@@ -36,8 +42,6 @@ class Player {
   private lastOpts = '';
   private loopLastTick = 0;
   private onRendered: Array<() => void> = [];
-  /** Clic sur un temps ou une note dans la partition. */
-  onBeatClick: ((c: Omit<Cursor, 'string'> & { string?: number }) => void) | null = null;
 
   mount(element: HTMLElement, scrollElement: HTMLElement) {
     if (this.api) this.destroy();
@@ -55,6 +59,8 @@ class Player {
     settings.display.padding = [20, 20, 20, 20];
     const api = new alphaTab.AlphaTabApi(element, settings);
     this.api = api;
+    // Accès de débogage (outils de test), uniquement en développement.
+    if (import.meta.env.DEV) (window as unknown as { __guitarLab: unknown }).__guitarLab = { player: this, alphaTab };
 
     api.soundFontLoad.on((e) => useApp.getState().setPlayer({ loadingSoundFont: e.total ? e.loaded / e.total : 0 }));
     api.playerReady.on(() => useApp.getState().setPlayer({ ready: true, loadingSoundFont: 1 }));
@@ -72,8 +78,6 @@ class Player {
     api.playedBeatChanged.on((beat) => {
       useApp.getState().setPlayer({ playingBeat: cursorFromAlphaTabBeat(beat) });
     });
-    api.beatMouseDown.on((beat) => this.onBeatClick?.(cursorFromAlphaTabBeat(beat)));
-    api.noteMouseDown.on((note) => this.onBeatClick?.({ ...cursorFromAlphaTabBeat(note.beat), string: stringFromAlphaTabNote(note) }));
     api.postRenderFinished.on(() => {
       const cbs = this.onRendered;
       this.onRendered = [];
@@ -120,6 +124,16 @@ class Player {
     // Les nuances ne s'affichent que si le morceau en contient (sinon alphaTab montre un « f » par défaut).
     const usesDynamics = song.tracks.some((t) => t.bars.some((b) => b.voices.some((v) => v.beats.some((x) => x.effects.dynamic))));
     api.settings.notation.elements.set(alphaTab.NotationElement.EffectDynamics, usesDynamics);
+    // Tablature seule / partition seule / les deux (la batterie garde sa portée).
+    for (const t of this.score!.tracks) {
+      const st = t.staves[0];
+      if (st.isPercussion) continue;
+      st.showTablature = opts.notation !== 'score';
+      st.showStandardNotation = opts.notation !== 'tab';
+    }
+    const eng = api.settings.display.resources.engravingSettings;
+    eng.tabLineSpacing = TAB_LINE_SPACING;
+    api.settings.display.resources.tablatureFont = new alphaTab.model.Font('Arial', TAB_FONT_SIZE, alphaTab.model.FontStyle.Plain, alphaTab.model.FontWeight.Bold);
     api.settings.display.scale = opts.zoom;
     api.settings.display.layoutMode = opts.layout === 'page' ? alphaTab.LayoutMode.Page : alphaTab.LayoutMode.Horizontal;
     const res = api.settings.display.resources;
@@ -224,6 +238,40 @@ class Player {
     this.api?.print(undefined, { display: { scale: 0.9 } });
   }
 
+  /**
+   * Position d'édition sous la souris : temps (ou emplacement d'ajout en fin de mesure)
+   * et corde, déduite de la ligne de tablature la plus proche.
+   * `x`, `y` sont relatifs au conteneur alphaTab.
+   */
+  hitTest(x: number, y: number, song: Song): (Omit<Cursor, 'string'> & { string?: number }) | null {
+    const api = this.api;
+    const lookup = api?.boundsLookup;
+    if (!api || !lookup || !this.score) return null;
+    const beat = lookup.getBeatAtPos(x, y);
+    if (!beat) return null;
+    const base = cursorFromAlphaTabBeat(beat);
+    const all = lookup.findBeats(beat) ?? [];
+    const modelBeats = song.tracks[base.track]?.bars[base.bar]?.voices[base.voice]?.beats ?? [];
+    // Une mesure vide du modèle est dessinée avec des silences de remplissage : on vise le début.
+    let beatIndex = modelBeats.length === 0 ? 0 : Math.min(base.beat, modelBeats.length);
+    const right = Math.max(...all.map((b) => b.realBounds.x + b.realBounds.w));
+    if (modelBeats.length > 0 && base.beat === modelBeats.length - 1 && x > right) beatIndex = modelBeats.length;
+    // Corde : portée de tablature contenant le clic (la plus basse du système).
+    const staff = beat.voice.bar.staff;
+    let string: number | undefined;
+    if (staff.showTablature && !staff.isPercussion) {
+      const n = staff.tuning.length;
+      for (const bb of all) {
+        const r = bb.barBounds.realBounds;
+        const sp = n > 1 ? r.h / (n - 1) : r.h;
+        if (y >= r.y - sp * 0.8 && y <= r.y + r.h + sp * 0.8) {
+          string = Math.max(1, Math.min(n, Math.round((y - r.y) / sp) + 1));
+        }
+      }
+    }
+    return { ...base, beat: beatIndex, string };
+  }
+
   /** Rectangle (relatif au conteneur alphaTab) du temps et de la note sous le curseur. */
   cursorBounds(c: Cursor): { beat: alphaTab.rendering.Bounds; note?: alphaTab.rendering.Bounds; bar?: alphaTab.rendering.Bounds; stringY?: number } | null {
     const api = this.api;
@@ -249,7 +297,7 @@ class Player {
     const barBounds = union(all.map((b) => b.barBounds.realBounds));
     if (append) {
       const x = beatRect.x + beatRect.w;
-      return { beat: { x, y: beatRect.y, w: Math.max(14, Math.min(40, barBounds.x + barBounds.w - x - 4)), h: beatRect.h } as alphaTab.rendering.Bounds, bar: barBounds };
+      return { beat: { x, y: beatRect.y, w: Math.max(14, Math.min(40, barBounds.x + barBounds.w - x - 4)), h: beatRect.h } as alphaTab.rendering.Bounds, bar: barBounds, stringY: this.stringY(c, beats, lookup) };
     }
     // Note : de préférence la frette sur la tablature (dernière portée).
     let noteBounds: alphaTab.rendering.Bounds | undefined;
@@ -257,28 +305,18 @@ class Player {
       const nb = bb.notes?.find((n) => stringFromAlphaTabNote(n.note) === c.string)?.noteHeadBounds;
       if (nb) noteBounds = nb;
     }
-    return { beat: beatRect, note: noteBounds, bar: barBounds, stringY: noteBounds ? undefined : this.stringY(c, beats, lookup) };
+    return { beat: beatRect, note: noteBounds, bar: barBounds, stringY: this.stringY(c, beats, lookup) };
   }
 
-  /**
-   * Ordonnée de la corde du curseur sur la tablature, déduite d'une note
-   * de la même mesure (la tablature est la portée la plus basse).
-   */
+  /** Ordonnée de la corde du curseur sur la portée de tablature (la plus basse du système). */
   private stringY(c: Cursor, beats: alphaTab.model.Beat[], lookup: alphaTab.rendering.BoundsLookup): number | undefined {
     const staff = this.score?.tracks[c.track]?.staves[0];
-    if (!staff || !staff.showTablature || staff.isPercussion) return undefined;
-    const spacing = (this.api?.settings.display.resources.engravingSettings.tabLineSpacing ?? 13) * (this.api?.settings.display.scale ?? 1);
-    const ordered = [...beats.slice(Math.min(c.beat, beats.length - 1)), ...beats];
-    for (const b of ordered) {
-      const all = lookup.findBeats(b);
-      if (!all?.length) continue;
-      const tab = [...all].sort((x, y) => x.realBounds.y - y.realBounds.y).at(-1)!;
-      const ref = tab.notes?.[0];
-      if (!ref) continue;
-      const y = ref.noteHeadBounds.y + ref.noteHeadBounds.h / 2;
-      return y + (c.string - stringFromAlphaTabNote(ref.note)) * spacing;
-    }
-    return undefined;
+    if (!staff || !staff.showTablature || staff.isPercussion || beats.length === 0) return undefined;
+    const all = lookup.findBeats(beats[Math.min(c.beat, beats.length - 1)]);
+    if (!all?.length) return undefined;
+    const r = [...all].sort((a, b) => a.barBounds.realBounds.y - b.barBounds.realBounds.y).at(-1)!.barBounds.realBounds;
+    const n = staff.tuning.length;
+    return r.y + ((c.string - 1) * r.h) / Math.max(1, n - 1);
   }
 }
 

@@ -13,9 +13,9 @@
 
 | Priorité | Fonctionnalité | État | Code | Remarque |
 | --- | --- | --- | --- | --- |
-| MVP | Vue tablature + partition liées | ✅ Fait | `apps/desktop/src/components/ScoreView.tsx` |  |
+| MVP | Vue tablature + partition liées (tablature seule par défaut) | ✅ Fait | `apps/desktop/src/components/ScoreView.tsx` |  |
 | MVP | Saisie au clavier | ✅ Fait | `packages/core/src/editor.ts + keymap.ts` |  |
-| MVP | Saisie à la souris | ✅ Fait | `apps/desktop/src/components/Toolbar.tsx` |  |
+| MVP | Saisie à la souris (clic sur la corde + sélecteur de frette) | ✅ Fait | `apps/desktop/src/components/FretPicker.tsx` |  |
 | MVP | Durées, points, n-olets | ✅ Fait | `packages/core/src/editor.ts` |  |
 | MVP | Silences et remplissage automatique | ✅ Fait | `packages/core/src/editor.ts` | Pauses multi-mesures : à faire |
 | MVP | Signature, armure, anacrouse | ✅ Fait | `apps/desktop/src/components/BarDialog.tsx` |  |
