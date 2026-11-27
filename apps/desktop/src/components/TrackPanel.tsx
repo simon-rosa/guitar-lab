@@ -1,7 +1,7 @@
 /** Pistes et mixeur : sélection, volume, panoramique, solo, muet. */
 import { useState } from 'react';
 import { addTrack, INSTRUMENT_PRESETS, moveTrack, removeTrack, selectTrack, tuningLabel, updateTrack } from '@guitar-lab/core';
-import { useApp, useEditor } from '../app/store';
+import { askConfirm, useApp, useEditor } from '../app/store';
 
 export function TrackPanel() {
   const s = useEditor();
@@ -94,7 +94,7 @@ export function TrackPanel() {
                     type="button"
                     className="ghost small danger"
                     disabled={s.song.tracks.length <= 1}
-                    onClick={() => window.confirm(`Supprimer la piste « ${t.name} » ?`) && edit((st) => removeTrack(st, i))}
+                    onClick={async () => (await askConfirm(`Supprimer la piste « ${t.name} » et toutes ses notes ?`, 'Supprimer', true)) && edit((st) => removeTrack(st, i))}
                   >
                     Supprimer
                   </button>

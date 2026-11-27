@@ -115,7 +115,7 @@ export function runAction(id: ActionId): void {
       player.setLoop(from, to);
       return app.notify('Boucle activée sur la sélection.');
     }
-    case 'file.new': return newSong();
+    case 'file.new': return void newSong();
     case 'file.open': return void openAny();
     case 'file.save': return void saveSong();
     case 'file.print': return player.print();

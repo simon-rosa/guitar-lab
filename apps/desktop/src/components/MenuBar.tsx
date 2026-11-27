@@ -5,7 +5,7 @@ import { input_midi_input } from '@guitar-lab/features';
 import { runAction } from '../app/actions';
 import { exportAs, newSong, openAny, saveSong } from '../app/files';
 import { getEditor, useApp, type DialogId } from '../app/store';
-import { isTauri } from '../app/platform';
+import { isPreview, isTauri } from '../app/platform';
 
 interface Item {
   label: string;
@@ -92,7 +92,7 @@ export function MenuBar({ right }: { right?: ReactNode }) {
   return (
     <nav className="menubar" aria-label="Menus">
       <span className="brand" aria-hidden>
-        <img src="/icon.svg" alt="" width={20} height={20} /> Guitar Lab
+        <img src="./icon.svg" alt="" width={20} height={20} /> Guitar Lab
       </span>
       <Menu
         label="Fichier"
@@ -170,7 +170,11 @@ export function MenuBar({ right }: { right?: ReactNode }) {
       />
       <div className="menubar-right">
         {right}
-        {!isTauri() && <span className="env-badge" title="Lancez « npm run tauri dev » pour l’app desktop">Web</span>}
+        {isPreview() ? (
+          <span className="env-badge preview" title="Version de test en ligne. Les exports Guitar Pro/MIDI, l’impression et le micro sont réservés à l’app desktop.">Aperçu</span>
+        ) : (
+          !isTauri() && <span className="env-badge" title="Lancez « npm run tauri dev » pour l’app desktop">Web</span>
+        )}
       </div>
     </nav>
   );

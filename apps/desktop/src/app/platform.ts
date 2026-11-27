@@ -5,6 +5,12 @@
 
 export const isTauri = () => typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 
+type ClaudeHost = { use: (name: string) => Promise<unknown> };
+const claudeHost = (): ClaudeHost | undefined => (window as unknown as { claude?: ClaudeHost }).claude;
+
+/** Aperçu web hébergé sur claude.ai : page isolée, téléchargements via la capacité « downloads ». */
+export const isPreview = () => typeof window !== 'undefined' && typeof claudeHost()?.use === 'function';
+
 export interface OpenedFile {
   name: string;
   path?: string;
@@ -49,6 +55,18 @@ export async function saveFile(suggestedName: string, data: Uint8Array | string,
     if (!path) return null;
     await writeFile(path, bytes);
     return path.split(/[\\/]/).pop() ?? path;
+  }
+  if (isPreview()) {
+    const downloads = (await claudeHost()!.use('downloads')) as { save: (r: { filename: string; data: Blob }) => Promise<unknown> } | null;
+    if (!downloads) throw new Error('Le téléchargement n’est pas disponible dans cet aperçu.');
+    try {
+      await downloads.save({ filename: suggestedName, data: new Blob([new Uint8Array(bytes)]) });
+      return suggestedName;
+    } catch (e) {
+      const code = (e as { code?: string }).code;
+      if (code === 'declined') return null;
+      throw new Error((e as { message?: string }).message ?? 'téléchargement refusé');
+    }
   }
   const blob = new Blob([new Uint8Array(bytes)], { type: mime });
   const url = URL.createObjectURL(blob);

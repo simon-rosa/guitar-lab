@@ -18,6 +18,7 @@ export function installKeyboard(getScrollElement: () => HTMLElement | null): () 
 
   const onKey = (e: KeyboardEvent) => {
     const app = useApp.getState();
+    if (app.confirmRequest) return;
     if (app.dialog) {
       if (e.key === 'Escape') app.openDialog(null);
       return;

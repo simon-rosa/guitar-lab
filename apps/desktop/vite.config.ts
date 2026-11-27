@@ -15,6 +15,8 @@ const pkg = (name: string) => resolve(here, `../../packages/${name}/src/index.ts
 const host = process.env.TAURI_DEV_HOST;
 
 export default defineConfig({
+  // Chemins relatifs : le même build sert à Tauri et à l'aperçu en ligne.
+  base: './',
   plugins: [react(), alphaTab({ alphaTabSourceDir: alphaTabDist })],
   resolve: {
     alias: {

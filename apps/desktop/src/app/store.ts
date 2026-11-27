@@ -69,6 +69,8 @@ export interface AppState extends Prefs {
   player: PlayerUiState;
   /** Sélecteur de frette ouvert sous le curseur. */
   picker: boolean;
+  /** Demande de confirmation affichée dans l'app (remplace window.confirm, bloqué dans l'aperçu web). */
+  confirmRequest: { message: string; confirmLabel: string; danger: boolean; resolve: (ok: boolean) => void } | null;
 
   /** Modification du document (crée une entrée d'annulation). */
   edit: (fn: (s: EditorState) => EditorState) => void;
@@ -182,9 +184,27 @@ export const useApp = create<AppState>((set, get) => ({
   setClipboard: (clipboard) => set({ clipboard }),
   setRenderError: (renderError) => set({ renderError }),
   picker: false,
+  confirmRequest: null,
   setPicker: (picker) => set({ picker }),
 }));
 
 /** Raccourci : état d'édition courant. */
 export const useEditor = () => useApp((s) => s.history.present);
 export const getEditor = () => useApp.getState().history.present;
+
+/** Confirmation dans l'interface. Renvoie true si l'utilisateur accepte. */
+export function askConfirm(message: string, confirmLabel = 'Continuer', danger = false): Promise<boolean> {
+  return new Promise((resolve) => {
+    useApp.setState({
+      confirmRequest: {
+        message,
+        confirmLabel,
+        danger,
+        resolve: (ok) => {
+          useApp.setState({ confirmRequest: null });
+          resolve(ok);
+        },
+      },
+    });
+  });
+}

@@ -5,6 +5,7 @@ import { installKeyboard } from './app/keyboard';
 import { useApp, useEditor } from './app/store';
 import { BarDialog } from './components/BarDialog';
 import { CommandPalette } from './components/CommandPalette';
+import { ConfirmDialog } from './components/ConfirmDialog';
 import { Fretboard } from './components/Fretboard';
 import { HelpDialog } from './components/HelpDialog';
 import { MenuBar } from './components/MenuBar';
@@ -114,6 +115,7 @@ export function App() {
       {dialog === 'roadmap' && <RoadmapDialog />}
       {dialog === 'about' && <About />}
       {dialog === 'help' && <HelpDialog />}
+      <ConfirmDialog />
       <Toast />
     </div>
   );

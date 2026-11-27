@@ -1480,3 +1480,21 @@ legend {
     display: none !important;
   }
 }
+
+.env-badge.preview {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.modal.confirm {
+  width: min(440px, 92vw);
+}
+
+.modal.confirm p {
+  margin: 0;
+  font-size: 15px;
+}
+
+.primary.danger {
+  background: var(--bad);
+}

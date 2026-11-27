@@ -7,6 +7,7 @@ import * as alphaTab from '@coderline/alphatab';
 import { AlphaTexError, cursorFromAlphaTabBeat, findAlphaTabBeat, stringFromAlphaTabNote, toAlphaTabScore } from '@guitar-lab/alphatab-bridge';
 import type { Cursor, Song } from '@guitar-lab/core';
 import { useApp } from '../app/store';
+import { isPreview } from '../app/platform';
 
 type Api = alphaTab.AlphaTabApi;
 
@@ -46,11 +47,13 @@ class Player {
   mount(element: HTMLElement, scrollElement: HTMLElement) {
     if (this.api) this.destroy();
     const settings = new alphaTab.Settings();
-    settings.core.fontDirectory = '/font/';
+    // Chemins relatifs à la page : fonctionne à la racine (Tauri, dev) comme dans un sous-dossier (aperçu en ligne).
+    settings.core.fontDirectory = new URL('font/', document.baseURI).href;
     settings.core.includeNoteBounds = true;
     settings.core.logLevel = alphaTab.LogLevel.Warning;
     settings.player.playerMode = alphaTab.PlayerMode.EnabledSynthesizer;
-    settings.player.soundFont = '/soundfont/sonivox.sf2';
+    // L'aperçu en ligne ne sert pas les .sf2 : la banque y est livrée en base64 (.txt) et décodée ici.
+    if (!isPreview()) settings.player.soundFont = new URL('soundfont/sonivox.sf2', document.baseURI).href;
     settings.player.scrollElement = scrollElement;
     settings.player.enableCursor = true;
     settings.player.enableAnimatedBeatCursor = true;
@@ -62,6 +65,7 @@ class Player {
     // Accès de débogage (outils de test), uniquement en développement.
     if (import.meta.env.DEV) (window as unknown as { __guitarLab: unknown }).__guitarLab = { player: this, alphaTab };
 
+    if (isPreview()) void this.loadPreviewSoundFont(api);
     api.soundFontLoad.on((e) => useApp.getState().setPlayer({ loadingSoundFont: e.total ? e.loaded / e.total : 0 }));
     api.playerReady.on(() => useApp.getState().setPlayer({ ready: true, loadingSoundFont: 1 }));
     api.playerStateChanged.on((e) => useApp.getState().setPlayer({ playing: e.state === alphaTab.synth.PlayerState.Playing }));
@@ -85,6 +89,19 @@ class Player {
       window.dispatchEvent(new CustomEvent('guitarlab:rendered'));
     });
     api.error.on((e) => useApp.getState().notify(`Rendu : ${e.message}`, 'error'));
+  }
+
+  private async loadPreviewSoundFont(api: Api) {
+    try {
+      const res = await fetch(new URL('soundfont/sonivox.sf2.b64.txt', document.baseURI).href);
+      const b64 = (await res.text()).replace(/\s+/g, '');
+      const bin = atob(b64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      api.loadSoundFont(bytes, false);
+    } catch (e) {
+      useApp.getState().notify(`Sons indisponibles : ${(e as Error).message}`, 'error');
+    }
   }
 
   destroy() {
@@ -235,6 +252,10 @@ class Player {
   }
 
   print() {
+    if (isPreview()) {
+      useApp.getState().notify('L’impression et l’export PDF sont disponibles dans l’application desktop.', 'error');
+      return;
+    }
     this.api?.print(undefined, { display: { scale: 0.9 } });
   }
 

@@ -7,3 +7,4 @@ apps/desktop/src-tauri/gen/
 .vite/
 coverage/
 *.log
+apps/desktop/preview-dist/
