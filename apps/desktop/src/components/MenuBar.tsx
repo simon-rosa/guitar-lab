@@ -1,8 +1,8 @@
 /** Barre de menus : Fichier, Édition, Affichage, Outils, Aide. */
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { DEFAULT_KEYMAP, setFret, setCursor, type ActionId } from '@guitar-lab/core';
+import { DEFAULT_KEYMAP, type ActionId } from '@guitar-lab/core';
 import { input_midi_input } from '@guitar-lab/features';
-import { runAction } from '../app/actions';
+import { runAction, writeNote } from '../app/actions';
 import { exportAs, newSong, openAny, saveSong } from '../app/files';
 import { getEditor, useApp, type DialogId } from '../app/store';
 import { isPreview, isTauri } from '../app/platform';
@@ -79,7 +79,7 @@ export function MenuBar({ right }: { right?: ReactNode }) {
         const s = getEditor();
         const t = s.song.tracks[s.cursor.track];
         const pos = t.kind === 'drums' ? { string: 1, fret: e.pitch } : input_midi_input.pitchToPosition(e.pitch, t.tuning, t.capo, s.cursor.string);
-        if (pos) useApp.getState().edit((x) => setFret(setCursor(x, { string: pos.string }), pos.fret));
+        if (pos) writeNote(pos.fret, { string: pos.string });
       });
       midiStop.current = stop;
       setMidiOn(true);
@@ -154,6 +154,7 @@ export function MenuBar({ right }: { right?: ReactNode }) {
       <Menu
         label="Outils"
         items={[
+          { label: 'Entendre chaque note en l’écrivant', checked: st.auditionNotes, run: () => st.setPrefs({ auditionNotes: !st.auditionNotes }) },
           { label: 'Accordeur', run: open('tuner') },
           { label: 'Saisie MIDI (clavier / guitare MIDI)', checked: midiOn, run: () => void toggleMidi() },
           { label: 'Raccourcis clavier…', run: open('shortcuts') },

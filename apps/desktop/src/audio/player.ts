@@ -40,6 +40,8 @@ class Player {
   api: Api | null = null;
   score: alphaTab.model.Score | null = null;
   private lastSong: Song | null = null;
+  /** Note à faire entendre dès que la partition modifiée est recalculée. */
+  private pendingAudition: Cursor | null = null;
   private lastOpts = '';
   private loopLastTick = 0;
   private onRendered: Array<() => void> = [];
@@ -130,6 +132,7 @@ class Player {
       if (songChanged || !this.score) {
         this.score = toAlphaTabScore(song, api.settings);
         this.applyMixer(song, this.score);
+        this.flushAudition();
       }
       useApp.getState().setRenderError(null);
     } catch (e) {
@@ -164,6 +167,28 @@ class Player {
     res.barNumberColor = soft;
     api.updateSettings();
     api.renderScore(this.score!, opts.tracks.filter((t) => t < this.score!.tracks.length));
+  }
+
+  /** Demande d'entendre la note écrite à cette position (jouée après recalcul de la partition). */
+  audition(c: Cursor) {
+    if (!useApp.getState().auditionNotes) return;
+    this.pendingAudition = { ...c };
+  }
+
+  private flushAudition() {
+    const c = this.pendingAudition;
+    this.pendingAudition = null;
+    const api = this.api;
+    if (!c || !api || !this.score || !useApp.getState().player.ready) return;
+    if (useApp.getState().player.playing) return; // pas de note par-dessus la lecture
+    const beat = findAlphaTabBeat(this.score, c);
+    if (!beat || beat.index !== c.beat) return;
+    const note = beat.notes.find((n) => (beat.voice.bar.staff.isPercussion ? true : stringFromAlphaTabNote(n) === c.string));
+    try {
+      if (note) api.playNote(note);
+    } catch {
+      /* lecteur pas prêt : on ignore */
+    }
   }
 
   whenRendered(cb: () => void) {

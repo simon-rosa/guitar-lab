@@ -8,16 +8,15 @@ import {
   currentNote,
   deleteAtCursor,
   makeRest,
-  moveRight,
   pitchName,
   setDuration,
-  setFret,
   toggleDeadNote,
   toggleDot,
   toggleTuplet,
   type Duration,
 } from '@guitar-lab/core';
 import { useApp, useEditor } from '../app/store';
+import { writeNote } from '../app/actions';
 import { DURATION_INFO } from './durations';
 
 const DRUM_KIT: Array<{ key: number; name: string }> = [
@@ -44,6 +43,7 @@ const DRUM_KIT: Array<{ key: number; name: string }> = [
 export function FretPicker({ left, top }: { left: number; top: number }) {
   const s = useEditor();
   const autoAdvance = useApp((st) => st.autoAdvance);
+  const audition = useApp((st) => st.auditionNotes);
   const track = s.song.tracks[s.cursor.track];
   const beat = currentBeat(s);
   const note = currentNote(s);
@@ -51,13 +51,7 @@ export function FretPicker({ left, top }: { left: number; top: number }) {
   const open = track.tuning[s.cursor.string - 1] + track.capo;
   const duration = beat?.duration ?? s.inputDuration;
 
-  const write = (fret: number) => {
-    const { edit } = useApp.getState();
-    edit((st) => {
-      const next = setFret(st, fret);
-      return autoAdvance ? moveRight(next) : next;
-    });
-  };
+  const write = (fret: number) => writeNote(fret, { advance: autoAdvance });
   const close = () => useApp.getState().setPicker(false);
   const edit = useApp.getState().edit;
 
@@ -148,6 +142,10 @@ export function FretPicker({ left, top }: { left: number; top: number }) {
       <label className="check compact advance">
         <input type="checkbox" checked={autoAdvance} onChange={(e) => useApp.getState().setPrefs({ autoAdvance: e.target.checked })} />
         Passer au temps suivant après chaque note
+      </label>
+      <label className="check compact advance">
+        <input type="checkbox" checked={audition} onChange={(e) => useApp.getState().setPrefs({ auditionNotes: e.target.checked })} />
+        Entendre la note en l’écrivant
       </label>
     </div>
   );

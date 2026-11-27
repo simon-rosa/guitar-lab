@@ -139,7 +139,23 @@ export function typeDigit(d: number) {
     fret = lastDigit.value * 10 + d;
   }
   lastDigit = { value: fret, at: now, key };
-  useApp.getState().edit((st) => setFret(st, fret));
+  writeNote(fret);
+}
+
+/**
+ * Écrit une frette au curseur (corde courante), fait entendre la note,
+ * puis avance si demandé. Utilisé par le clavier, le sélecteur, le manche et le MIDI.
+ */
+export function writeNote(fret: number, opts: { string?: number; advance?: boolean } = {}) {
+  const app = useApp.getState();
+  const before = app.history.present;
+  const at = { ...before.cursor, string: opts.string ?? before.cursor.string };
+  app.edit((st) => {
+    const placed = opts.string !== undefined ? setCursor(st, { string: opts.string }) : st;
+    const next = setFret(placed, fret);
+    return opts.advance ? moveRight(next) : next;
+  });
+  player.audition(at);
 }
 
 export { exportAs };

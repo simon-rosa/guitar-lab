@@ -54,6 +54,8 @@ interface Prefs {
   autoAdvance: boolean;
   /** L'aide de démarrage a été fermée. */
   welcomeDone: boolean;
+  /** Jouer chaque note au moment où on l'écrit. */
+  auditionNotes: boolean;
 }
 
 
@@ -102,6 +104,7 @@ function loadPrefs(): Prefs {
     notation: 'tab',
     autoAdvance: true,
     welcomeDone: false,
+    auditionNotes: true,
   };
   try {
     const raw = localStorage.getItem(PREFS_KEY);
@@ -176,6 +179,7 @@ export const useApp = create<AppState>((set, get) => ({
       notation: s.notation,
       autoAdvance: s.autoAdvance,
       welcomeDone: s.welcomeDone,
+      auditionNotes: s.auditionNotes,
     });
   },
   setPlayer: (p) => set((st) => ({ player: { ...st.player, ...p } })),
