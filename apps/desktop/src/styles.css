@@ -1518,10 +1518,9 @@ legend {
   background: rgba(224, 64, 64, 0.22);
 }
 
-.bar-bad span {
+.bar-bad-label {
   position: absolute;
-  top: -18px;
-  left: 4px;
+  line-height: 20px;
   font-size: 11px;
   font-weight: 700;
   color: #e04040;
@@ -1530,7 +1529,7 @@ legend {
   border-radius: 3px;
 }
 
-/* Boutons + / − au-dessus de chaque mesure */
+/* Boutons − (au-dessus) et + (en dessous) de chaque mesure */
 .bar-tools-layer {
   position: absolute;
   inset: 0;
@@ -1538,39 +1537,33 @@ legend {
   z-index: 1700;
 }
 
-.bar-tools {
+.bar-tool {
   position: absolute;
-  display: flex;
-  gap: 3px;
-  pointer-events: auto;
-  opacity: 0.45;
-  transition: opacity 120ms;
-}
-
-.bar-tools:hover,
-.bar-tools:focus-within {
-  opacity: 1;
-}
-
-.bar-tools button {
   width: 20px;
   height: 20px;
   padding: 0;
   border-radius: 5px;
   border: 1px solid var(--line);
   background: var(--bg-2);
+  color: var(--ink-2);
   font-size: 14px;
   font-weight: 700;
   line-height: 1;
   cursor: pointer;
+  pointer-events: auto;
+  opacity: 0.55;
+  transition: opacity 120ms;
 }
 
-.bar-tools button:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.bar-tools button:first-child:hover {
+.bar-tool:hover,
+.bar-tool:focus-visible {
+  opacity: 1;
   border-color: var(--bad);
   color: var(--bad);
+}
+
+.bar-tool.add:hover,
+.bar-tool.add:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
 }

@@ -23,6 +23,8 @@ export interface RenderOptions {
 /** Espacement des lignes de tablature (alphaTab : 13 par défaut) : plus aéré, plus facile à viser. */
 const TAB_LINE_SPACING = 20;
 const TAB_FONT_SIZE = 17;
+/** Hauteur réservée (avant zoom) au-dessus et en dessous de chaque ligne pour les boutons de mesure. */
+const BAR_TOOL_ROOM = 26;
 
 const MIXER_KEYS = new Set(['volume', 'pan', 'mute', 'solo']);
 
@@ -171,6 +173,12 @@ class Player {
     const eng = api.settings.display.resources.engravingSettings;
     eng.tabLineSpacing = TAB_LINE_SPACING;
     api.settings.display.resources.tablatureFont = new alphaTab.model.Font('Arial', TAB_FONT_SIZE, alphaTab.model.FontStyle.Plain, alphaTab.model.FontWeight.Bold);
+    // De la place au-dessus et en dessous de chaque ligne pour les boutons − / + des mesures.
+    // Entre deux lignes : le + de la ligne du dessus, un espace, puis le − de la ligne du dessous.
+    api.settings.display.systemPaddingTop = 10;
+    api.settings.display.systemPaddingBottom = 10 + 2 * BAR_TOOL_ROOM + 16;
+    api.settings.display.firstSystemPaddingTop = BAR_TOOL_ROOM;
+    api.settings.display.lastSystemPaddingBottom = BAR_TOOL_ROOM;
     api.settings.display.scale = opts.zoom;
     api.settings.display.layoutMode = opts.layout === 'page' ? alphaTab.LayoutMode.Page : alphaTab.LayoutMode.Horizontal;
     const res = api.settings.display.resources;
@@ -345,8 +353,11 @@ class Player {
     return { ...base, beat: beatIndex, string };
   }
 
-  /** Rectangle d'une mesure (toutes portées de la piste), relatif au conteneur alphaTab. */
-  barRect(track: number, bar: number): { x: number; y: number; w: number; h: number } | null {
+  /**
+   * Rectangle d'une mesure (toutes portées de la piste), relatif au conteneur alphaTab,
+   * et étendue verticale de tout ce qui est dessiné sur sa ligne (`top`, `bottom`).
+   */
+  barRect(track: number, bar: number): { x: number; y: number; w: number; h: number; top: number; bottom: number } | null {
     const lookup = this.api?.boundsLookup;
     const first = this.score?.tracks[track]?.staves[0]?.bars[bar]?.voices[0]?.beats[0];
     if (!lookup || !first) return null;
@@ -355,7 +366,23 @@ class Player {
     const rs = all.map((b) => b.barBounds.realBounds);
     const x = Math.min(...rs.map((r) => r.x));
     const y = Math.min(...rs.map((r) => r.y));
-    return { x, y, w: Math.max(...rs.map((r) => r.x + r.w)) - x, h: Math.max(...rs.map((r) => r.y + r.h)) - y };
+    // La ligne (système) couvre tout ce qui est dessiné — tempo, effets, queues de rythme.
+    // Dans les limites d'alphaTab, sa marge basse est incluse (pas sa marge haute) : on la retire.
+    const mb = all[0].barBounds.masterBarBounds;
+    const sys = mb.realBounds;
+    const systems = lookup.staffSystems;
+    const display = this.api!.settings.display;
+    // La dernière ligne n'inclut pas sa marge basse dans ses limites.
+    const isLast = mb.staffSystemBounds === systems[systems.length - 1];
+    const padBottom = isLast ? 0 : display.systemPaddingBottom * display.scale;
+    return {
+      x,
+      y,
+      w: Math.max(...rs.map((r) => r.x + r.w)) - x,
+      h: Math.max(...rs.map((r) => r.y + r.h)) - y,
+      top: sys.y,
+      bottom: sys.y + sys.h - padBottom,
+    };
   }
 
   /** Rectangle (relatif au conteneur alphaTab) du temps et de la note sous le curseur. */

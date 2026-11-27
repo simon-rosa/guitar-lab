@@ -31,8 +31,8 @@ export function ScoreView({ scrollRef }: { scrollRef: React.RefObject<HTMLDivEle
   const pickerOpen = useApp((s) => s.picker);
   const [cursorRect, setCursorRect] = useState<{ beat: Rect; note?: Rect; stringY?: number; sel: Rect[] } | null>(null);
   const [renderTick, setRenderTick] = useState(0);
-  const [badBars, setBadBars] = useState<Array<Rect & { key: string; label: string; over: boolean }>>([]);
-  const [barRects, setBarRects] = useState<Array<Rect & { bar: number }>>([]);
+  const [badBars, setBadBars] = useState<Array<Rect & { key: string; label: string; over: boolean; labelTop: number }>>([]);
+  const [barRects, setBarRects] = useState<Array<Rect & { bar: number; top: number; bottom: number }>>([]);
 
   // Montage d'alphaTab.
   useEffect(() => {
@@ -72,7 +72,7 @@ export function ScoreView({ scrollRef }: { scrollRef: React.RefObject<HTMLDivEle
 
   // Mesures dont le total des durées ne correspond pas à la signature : en rouge, comme Guitar Pro.
   useLayoutEffect(() => {
-    const out: Array<Rect & { key: string; label: string; over: boolean }> = [];
+    const out: Array<Rect & { key: string; label: string; over: boolean; labelTop: number }> = [];
     for (const ti of tracksKey.split(',').map(Number)) {
       const t = editor.song.tracks[ti];
       if (!t) continue;
@@ -80,7 +80,7 @@ export function ScoreView({ scrollRef }: { scrollRef: React.RefObject<HTMLDivEle
         const st = barFillStatus(t.bars[bi], mb);
         if (st !== 'incomplete' && st !== 'overfull') return;
         const r = player.barRect(ti, bi);
-        if (r) out.push({ ...r, key: `${ti}-${bi}`, over: st === 'overfull', label: st === 'overfull' ? 'Trop longue' : 'Incomplète' });
+        if (r) out.push({ ...r, labelTop: r.top - 22, key: `${ti}-${bi}`, over: st === 'overfull', label: st === 'overfull' ? 'Trop longue' : 'Incomplète' });
       });
     }
     setBadBars(out);
@@ -89,7 +89,7 @@ export function ScoreView({ scrollRef }: { scrollRef: React.RefObject<HTMLDivEle
   // Position de chaque mesure (sur la première piste affichée) pour ses boutons + / −.
   useLayoutEffect(() => {
     const ti = Number(tracksKey.split(',')[0]);
-    const out: Array<Rect & { bar: number }> = [];
+    const out: Array<Rect & { bar: number; top: number; bottom: number }> = [];
     editor.song.masterBars.forEach((_, bi) => {
       const r = player.barRect(ti, bi);
       if (r) out.push({ ...r, bar: bi });
@@ -174,27 +174,37 @@ export function ScoreView({ scrollRef }: { scrollRef: React.RefObject<HTMLDivEle
         <div ref={hostRef} className="score-host" />
         <div className="bar-status-layer" aria-hidden>
           {badBars.map((b) => (
-            <div key={b.key} className={`bar-bad${b.over ? ' over' : ''}`} style={{ left: b.x, top: b.y - 4, width: b.w, height: b.h + 8 }}>
-              <span>{b.label}</span>
+            <div key={b.key}>
+              <div className={`bar-bad${b.over ? ' over' : ''}`} style={{ left: b.x, top: b.y - 4, width: b.w, height: b.h + 8 }} />
+              <span className="bar-bad-label" style={{ left: b.x + 30, top: b.labelTop }}>
+                {b.label}
+              </span>
             </div>
           ))}
         </div>
-        <div className="bar-tools-layer">
+        {/* − au-dessus et + en dessous de chaque mesure, toujours à la même place :
+            au début de la mesure, hors de tout ce qui est dessiné sur la ligne. */}
+        <div className="bar-tools-layer" onMouseDown={(e) => e.stopPropagation()}>
           {barRects.map((r) => (
-            <div
-              key={r.bar}
-              className="bar-tools"
-              style={{
-                left: r.x + r.w - 46,
-                // Plus haut quand la mesure porte un tempo ou une section, pour ne pas les recouvrir.
-                top: r.y - (r.bar === 0 || editor.song.masterBars[r.bar]?.tempo || editor.song.masterBars[r.bar]?.section ? 52 : 30),
-              }}
-              onMouseDown={(e) => e.stopPropagation()}
-            >
-              <button type="button" title={`Supprimer la mesure ${r.bar + 1}`} aria-label={`Supprimer la mesure ${r.bar + 1}`} onClick={() => removeBar(r.bar)}>
+            <div key={r.bar}>
+              <button
+                type="button"
+                className="bar-tool"
+                style={{ left: r.x + 4, top: r.top - 24 }}
+                title={`Supprimer la mesure ${r.bar + 1}`}
+                aria-label={`Supprimer la mesure ${r.bar + 1}`}
+                onClick={() => removeBar(r.bar)}
+              >
                 −
               </button>
-              <button type="button" title={`Ajouter une mesure vide après la mesure ${r.bar + 1}`} aria-label={`Ajouter une mesure après la mesure ${r.bar + 1}`} onClick={() => addBarAfter(r.bar)}>
+              <button
+                type="button"
+                className="bar-tool add"
+                style={{ left: r.x + 4, top: r.bottom + 4 }}
+                title={`Ajouter une mesure vide après la mesure ${r.bar + 1}`}
+                aria-label={`Ajouter une mesure après la mesure ${r.bar + 1}`}
+                onClick={() => addBarAfter(r.bar)}
+              >
                 +
               </button>
             </div>
