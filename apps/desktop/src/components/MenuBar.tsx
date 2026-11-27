@@ -7,6 +7,15 @@ import { exportAs, newSong, openAny, saveSong } from '../app/files';
 import { getEditor, useApp, type DialogId } from '../app/store';
 import { isPreview, isTauri } from '../app/platform';
 
+/** Vrai si l'utilisateur (ou le contrôle du son) a choisi les sons de base. */
+const basicSounds = () => {
+  try {
+    return localStorage.getItem('guitar-lab:basic-sounds') === '1';
+  } catch {
+    return false;
+  }
+};
+
 interface Item {
   label: string;
   action?: ActionId;
@@ -155,6 +164,19 @@ export function MenuBar({ right }: { right?: ReactNode }) {
         label="Outils"
         items={[
           { label: 'Entendre chaque note en l’écrivant', checked: st.auditionNotes, run: () => st.setPrefs({ auditionNotes: !st.auditionNotes }) },
+          {
+            label: 'Instruments réalistes (GeneralUser GS)',
+            checked: !basicSounds(),
+            run: () => {
+              try {
+                if (basicSounds()) localStorage.removeItem('guitar-lab:basic-sounds');
+                else localStorage.setItem('guitar-lab:basic-sounds', '1');
+              } catch {
+                /* stockage indisponible */
+              }
+              st.notify('Rechargez la page pour appliquer le changement de sons.');
+            },
+          },
           { label: 'Accordeur', run: open('tuner') },
           { label: 'Saisie MIDI (clavier / guitare MIDI)', checked: midiOn, run: () => void toggleMidi() },
           { label: 'Raccourcis clavier…', run: open('shortcuts') },

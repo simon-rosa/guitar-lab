@@ -9,12 +9,30 @@ import { AlphaTexError, cursorFromAlphaTabBeat, findAlphaTabBeat, stringFromAlph
 import type { Cursor, Song } from '@guitar-lab/core';
 import { useApp } from '../app/store';
 import { isPreview } from '../app/platform';
-import { DEFAULT_REVERB, installOutputEffects, setReverb } from './fx';
+import { bypassEffects, DEFAULT_REVERB, effectsBypassed, installOutputEffects, outputLevels, setReverb } from './fx';
 
 installOutputEffects();
 
 /** Instruments GeneralUser GS chargés par-dessus SONiVOX (guitares, basses, piano, batterie). */
 const REALISTIC_BANKS = ['p000', 'p024', 'p025', 'p026', 'p027', 'p028', 'p029', 'p030', 'p031', 'p032', 'p033', 'p034', 'p035', 'p036', 'p037', 'p038', 'p039', 'drums'];
+
+/** Mémorise qu'un navigateur ne lit pas les instruments réalistes : on ne les recharge plus. */
+const SAFE_SOUNDS_KEY = 'guitar-lab:basic-sounds';
+function basicSoundsOnly(): boolean {
+  try {
+    return localStorage.getItem(SAFE_SOUNDS_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+/** Banque SoundFont complète et intacte : en-tête RIFF « sfbk » et taille exacte. */
+function isValidBank(b: Uint8Array): boolean {
+  if (b.length < 12) return false;
+  const tag = (o: number) => String.fromCharCode(b[o], b[o + 1], b[o + 2], b[o + 3]);
+  const size = b[4] | (b[5] << 8) | (b[6] << 16) | (b[7] << 24);
+  return tag(0) === 'RIFF' && tag(8) === 'sfbk' && size + 8 === b.length;
+}
 
 /** Lit un fichier de sons livré avec l'app (en base64 dans l'aperçu web, qui ne sert pas les banques). */
 async function fetchBank(path: string): Promise<Uint8Array> {
@@ -112,7 +130,7 @@ class Player {
 
     if (isPreview()) void this.loadPreviewSoundFont(api);
     // Une fois la banque de base prête, on ajoute les instruments réalistes (une seule fois).
-    let extrasRequested = false;
+    let extrasRequested = basicSoundsOnly();
     api.soundFontLoaded.on(() => {
       if (extrasRequested) return;
       extrasRequested = true;
@@ -136,6 +154,11 @@ class Player {
     });
     api.playedBeatChanged.on((beat) => {
       useApp.getState().setPlayer({ playingBeat: cursorFromAlphaTabBeat(beat) });
+      this.expectSound(beat);
+    });
+    api.playerStateChanged.on((e) => {
+      if (e.state === alphaTab.synth.PlayerState.Playing) this.startWatchdog();
+      else this.stopWatchdog();
     });
     api.postRenderFinished.on(() => {
       const cbs = this.onRendered;
@@ -162,7 +185,10 @@ class Player {
       // Téléchargements en parallèle, ajout dans l'ordre (le dernier chargé l'emporte).
       const banks = await Promise.all(REALISTIC_BANKS.map((b) => fetchBank(`soundfont/generaluser/${b}.sf3`)));
       if (this.api !== api) return;
-      for (const bytes of banks) api.loadSoundFont(bytes, true);
+      // Un fichier tronqué ou altéré en route donnerait un instrument muet : on l'écarte.
+      const valid = banks.filter(isValidBank);
+      if (valid.length !== banks.length) console.warn(`${banks.length - valid.length} banque(s) de sons ignorée(s) (fichier incomplet).`);
+      for (const bytes of valid) api.loadSoundFont(bytes, true);
       this.realisticReady = true;
       window.dispatchEvent(new CustomEvent('guitarlab:sounds-ready'));
     } catch (e) {
@@ -278,6 +304,93 @@ class Player {
       else if (note) api.playNote(note);
     } catch {
       /* lecteur pas prêt : on ignore */
+    }
+  }
+
+  // ------------------------------------------------------------ contrôle du son
+
+  /**
+   * Pendant la lecture, on vérifie qu'un temps joué avec des notes produit bien du son.
+   * Sinon : effets retirés si ce sont eux qui bloquent, puis retour aux sons de base
+   * si ce sont les instruments réalistes. Une fois le son constaté, on arrête de surveiller.
+   */
+  private soundHealthy = false;
+  private watchdog: number | null = null;
+  private expectedSince: number | null = null;
+  private levelsSeen = { input: 0, output: 0 };
+
+  private expectSound(beat: alphaTab.model.Beat) {
+    if (this.soundHealthy || this.expectedSince !== null || beat.isRest || beat.notes.length === 0) return;
+    const pi = beat.voice.bar.staff.track.playbackInfo;
+    if (pi.isMute || pi.volume === 0) return;
+    this.expectedSince = performance.now();
+    this.levelsSeen = { input: 0, output: 0 };
+  }
+
+  private startWatchdog() {
+    if (this.soundHealthy || this.watchdog !== null) return;
+    this.watchdog = window.setInterval(() => this.checkSound(), 150);
+  }
+
+  private stopWatchdog() {
+    if (this.watchdog !== null) window.clearInterval(this.watchdog);
+    this.watchdog = null;
+    this.expectedSince = null;
+  }
+
+  private checkSound() {
+    const lv = outputLevels();
+    const ctxRunning = (this.api?.player?.output as unknown as { context?: AudioContext } | undefined)?.context?.state === 'running';
+    if (!lv || this.expectedSince === null || !ctxRunning) return;
+    const seen = this.levelsSeen;
+    seen.input = Number.isNaN(lv.input) || Number.isNaN(seen.input) ? Number.NaN : Math.max(seen.input, lv.input);
+    seen.output = Number.isNaN(lv.output) || Number.isNaN(seen.output) ? Number.NaN : Math.max(seen.output, lv.output);
+    const AUDIBLE = 0.002;
+    if (seen.output > AUDIBLE) {
+      this.soundHealthy = true;
+      this.stopWatchdog();
+      return;
+    }
+    if (performance.now() - this.expectedSince < 1500) return;
+    // Plus d'une seconde de notes jouées sans aucun son en sortie : on cherche la cause.
+    this.expectedSince = null;
+    const notify = useApp.getState().notify;
+    if (!effectsBypassed() && (Number.isNaN(seen.output) || seen.input > AUDIBLE || Number.isNaN(seen.input))) {
+      bypassEffects();
+      notify('Le son était bloqué par la réverbération : elle est désactivée pour cette séance.', 'error');
+      return;
+    }
+    if (this.realisticReady) {
+      this.fallbackToBasicSounds();
+      return;
+    }
+    this.stopWatchdog();
+    this.soundHealthy = true;
+    notify('Aucun son ne sort : vérifie le volume de l’ordinateur et la sortie audio du navigateur, puis recharge la page.', 'error');
+  }
+
+  /** Recharge la seule banque SONiVOX et reprend la lecture. */
+  private async fallbackToBasicSounds() {
+    const api = this.api;
+    if (!api) return;
+    this.realisticReady = false;
+    try {
+      localStorage.setItem(SAFE_SOUNDS_KEY, '1');
+    } catch {
+      /* stockage indisponible */
+    }
+    useApp.getState().notify('Les instruments réalistes ne sonnent pas dans ce navigateur : retour aux sons de base.', 'error');
+    try {
+      const tick = api.tickPosition;
+      const resume = () => {
+        api.soundFontLoaded.off(resume);
+        api.tickPosition = tick;
+        api.play();
+      };
+      api.soundFontLoaded.on(resume);
+      api.loadSoundFont(await fetchBank('soundfont/sonivox.sf2'), false);
+    } catch (e) {
+      useApp.getState().notify(`Sons indisponibles : ${(e as Error).message}`, 'error');
     }
   }
 

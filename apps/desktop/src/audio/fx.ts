@@ -4,16 +4,26 @@
  * alphaTab relie sa source sonore directement à la sortie de la carte son.
  * On intercepte cette liaison (une seule fois, au chargement) pour faire passer
  * le son par notre chaîne : entrée → compresseur → (sec + réverbération) → sortie.
+ *
+ * Deux mesures de niveau (avant et après les effets) permettent de vérifier
+ * pendant la lecture que le son passe vraiment ; si les effets bloquent le son
+ * sur un navigateur, `bypassEffects()` les retire sans interrompre la lecture.
  */
 
 interface Chain {
+  ctx: BaseAudioContext;
   input: GainNode;
   dry: GainNode;
   wet: GainNode;
+  inMeter: AnalyserNode;
+  outMeter: AnalyserNode;
+  bypassed: boolean;
 }
 
 const chains = new Map<BaseAudioContext, Chain>();
-let reverbAmount = 0.25; // = DEFAULT_REVERB
+export const DEFAULT_REVERB = 0.25;
+let reverbAmount = DEFAULT_REVERB;
+let bypass = false;
 const nativeConnect = AudioNode.prototype.connect;
 /** Liaison d'origine, sans notre interception. */
 const link = (from: AudioNode, to: AudioNode) => (nativeConnect as (d: AudioNode) => AudioNode).call(from, to);
@@ -37,36 +47,69 @@ function impulse(ctx: BaseAudioContext, seconds = 2.2, decay = 3.2): AudioBuffer
   return buf;
 }
 
-function chainFor(ctx: BaseAudioContext): Chain {
-  let c = chains.get(ctx);
-  if (c) return c;
-  const input = ctx.createGain();
-  const comp = ctx.createDynamicsCompressor();
-  comp.threshold.value = -14;
-  comp.knee.value = 10;
-  comp.ratio.value = 2.5;
-  comp.attack.value = 0.01;
-  comp.release.value = 0.2;
-  const dry = ctx.createGain();
-  const wet = ctx.createGain();
-  const conv = ctx.createConvolver();
-  conv.buffer = impulse(ctx);
-  link(input, comp);
-  link(comp, dry);
-  link(comp, conv);
-  link(conv, wet);
-  link(dry, ctx.destination);
-  link(wet, ctx.destination);
-  c = { input, dry, wet };
-  chains.set(ctx, c);
-  apply(c);
-  return c;
+function meter(ctx: BaseAudioContext): AnalyserNode {
+  const a = ctx.createAnalyser();
+  a.fftSize = 2048;
+  return a;
+}
+
+/** Chaîne d'effets du contexte audio, ou `null` si elle ne peut pas être construite. */
+function chainFor(ctx: BaseAudioContext): Chain | null {
+  const existing = chains.get(ctx);
+  if (existing) return existing;
+  try {
+    const input = ctx.createGain();
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -14;
+    comp.knee.value = 10;
+    comp.ratio.value = 2.5;
+    comp.attack.value = 0.01;
+    comp.release.value = 0.2;
+    const dry = ctx.createGain();
+    const wet = ctx.createGain();
+    const out = ctx.createGain();
+    const conv = ctx.createConvolver();
+    conv.buffer = impulse(ctx);
+    const inMeter = meter(ctx);
+    const outMeter = meter(ctx);
+    link(input, inMeter);
+    link(input, comp);
+    link(comp, dry);
+    link(comp, conv);
+    link(conv, wet);
+    link(dry, out);
+    link(wet, out);
+    link(out, outMeter);
+    link(out, ctx.destination);
+    const c: Chain = { ctx, input, dry, wet, inMeter, outMeter, bypassed: false };
+    chains.set(ctx, c);
+    apply(c);
+    if (bypass) bypassChain(c);
+    return c;
+  } catch (e) {
+    console.warn('Effets audio indisponibles, sortie directe.', e);
+    return null;
+  }
 }
 
 function apply(c: Chain) {
   // Le signal sec baisse un peu quand la réverbération monte, pour garder le même volume.
   c.dry.gain.value = 1 - reverbAmount * 0.3;
   c.wet.gain.value = reverbAmount * 0.9;
+}
+
+/** Relie l'entrée directement à la sortie : plus d'effets, le son passe tel quel. */
+function bypassChain(c: Chain) {
+  if (c.bypassed) return;
+  c.bypassed = true;
+  try {
+    c.input.disconnect();
+  } catch {
+    /* déjà déconnectée */
+  }
+  link(c.input, c.inMeter);
+  link(c.input, c.outMeter);
+  link(c.input, c.ctx.destination);
 }
 
 let installed = false;
@@ -77,7 +120,8 @@ export function installOutputEffects() {
   installed = true;
   AudioNode.prototype.connect = function (this: AudioNode, dest: AudioNode | AudioParam, ...rest: number[]) {
     if (dest instanceof AudioDestinationNode) {
-      return (nativeConnect as (d: AudioNode, ...r: number[]) => AudioNode).call(this, chainFor(this.context).input, ...rest);
+      const chain = chainFor(this.context);
+      if (chain) return (nativeConnect as (d: AudioNode, ...r: number[]) => AudioNode).call(this, chain.input, ...rest);
     }
     return (nativeConnect as (d: AudioNode | AudioParam, ...r: number[]) => AudioNode).call(this, dest, ...rest);
   } as typeof AudioNode.prototype.connect;
@@ -89,4 +133,39 @@ export function setReverb(amount: number) {
   chains.forEach(apply);
 }
 
-export const DEFAULT_REVERB = 0.25;
+/** Retire les effets (réverbération, compresseur) pour toute la session. */
+export function bypassEffects() {
+  bypass = true;
+  chains.forEach(bypassChain);
+}
+
+export function effectsBypassed(): boolean {
+  return bypass;
+}
+
+function peak(a: AnalyserNode): number {
+  const buf = new Float32Array(a.fftSize);
+  a.getFloatTimeDomainData(buf);
+  let m = 0;
+  for (const v of buf) {
+    if (Number.isNaN(v)) return Number.NaN;
+    m = Math.max(m, Math.abs(v));
+  }
+  return m;
+}
+
+/** Niveau crête actuel avant (`input`) et après (`output`) les effets ; NaN si le signal est corrompu. */
+export function outputLevels(): { input: number; output: number } | null {
+  let input = 0;
+  let output = 0;
+  let any = false;
+  chains.forEach((c) => {
+    if (c.ctx.state === 'closed') return;
+    any = true;
+    const i = peak(c.inMeter);
+    const o = peak(c.outMeter);
+    input = Number.isNaN(i) || Number.isNaN(input) ? Number.NaN : Math.max(input, i);
+    output = Number.isNaN(o) || Number.isNaN(output) ? Number.NaN : Math.max(output, o);
+  });
+  return any ? { input, output } : null;
+}
