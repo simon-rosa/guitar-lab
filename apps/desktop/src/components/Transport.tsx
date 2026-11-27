@@ -1,6 +1,6 @@
 /** Barre de transport : lecture, boucle, vitesse, métronome, décompte. */
 import { useEffect, useState } from 'react';
-import { barFillStatus, currentBeat, setSongReverb, setSongTempo, tempoAtBars } from '@guitar-lab/core';
+import { barFillInfo, currentBeat, setSongReverb, setSongTempo, tempoAtBars } from '@guitar-lab/core';
 import { DEFAULT_REVERB, setReverb } from '../audio/fx';
 import { player } from '../audio/player';
 import { runAction } from '../app/actions';
@@ -79,7 +79,8 @@ export function Transport() {
   const beat = currentBeat(s);
   const track = s.song.tracks[s.cursor.track];
   const mb = s.song.masterBars[s.cursor.bar];
-  const fill = barFillStatus(track.bars[s.cursor.bar], mb);
+  const fillInfo = barFillInfo(track.bars[s.cursor.bar], mb);
+  const fill = fillInfo.status;
   const tempo = tempoAtBars(s.song)[s.cursor.bar];
 
   return (
@@ -142,7 +143,9 @@ export function Transport() {
         <span>Voix {s.cursor.voice + 1}</span>
         <span>{durationName(beat?.duration ?? s.inputDuration)}</span>
         <span>{mb.timeSignature.join('/')}{tempo !== s.song.tempo ? ` · ♩ = ${tempo} ici` : ''}</span>
-        <span className={`fill ${fill}`}>{{ empty: 'mesure vide', incomplete: 'incomplète', full: 'complète', overfull: 'trop longue' }[fill]}</span>
+        <span className={`fill ${fill}`} title={fillInfo.detail}>
+          {fill === 'empty' ? 'mesure vide' : fill === 'full' ? `${fillInfo.text} ✓` : `${fillInfo.text} · ${fillInfo.detail}`}
+        </span>
         {s.anchor && <span className="sel">Sélection</span>}
       </div>
     </footer>

@@ -146,3 +146,22 @@ describe('insérer une note au milieu', () => {
     expect(frets).toEqual([1, 2, 9, 3]);
   });
 });
+
+describe('compte des temps de la mesure', () => {
+  it('affiche les temps remplis sur le total', async () => {
+    const { barFillInfo, formatBeats, setDuration, moveRightFree } = await import('../src');
+    expect(formatBeats(3.5)).toBe('3½');
+    expect(formatBeats(0.25)).toBe('¼');
+    expect(formatBeats(2 + 1 / 3)).toBe('2⅓');
+    let s = createEditorState(createSong({ bars: 1 }));
+    s = moveRightFree(setFret(s, 1));
+    s = moveRightFree(setFret(s, 2));
+    s = setDuration(setFret(s, 3), 8);
+    let info = barFillInfo(s.song.tracks[0].bars[0], s.song.masterBars[0]);
+    expect(info.text).toBe('2½ / 4 temps');
+    expect(info.detail).toBe('il manque 1½ temps');
+    s = updateMasterBar(s, 0, { timeSignature: [6, 8] });
+    info = barFillInfo(s.song.tracks[0].bars[0], s.song.masterBars[0]);
+    expect(info.text).toBe('5 / 6 croches');
+  });
+});

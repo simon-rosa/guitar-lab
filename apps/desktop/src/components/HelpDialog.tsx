@@ -75,7 +75,7 @@ export function HelpDialog() {
         </tbody>
       </table>
       <p className="hint">
-        Une mesure encadrée en rouge a une durée totale qui ne correspond pas à sa signature (« Trop longue » ou « Incomplète ») : ajoutez, retirez ou changez la durée de notes jusqu’à ce que le rouge disparaisse.
+        Une mesure encadrée en rouge a une durée totale qui ne correspond pas à sa signature : l’étiquette indique le compte, par exemple « 3½ / 4 temps » (il manque ½ temps) ou « 5 / 4 temps » (1 temps en trop). Ajoutez, retirez ou changez la durée de notes jusqu’à ce que le rouge disparaisse.
         <br />
         Sélection : glissez la souris sur la tablature (ou Maj+clic) pour sélectionner plusieurs temps ou mesures, puis copiez, dupliquez ou bouclez.
         Les menus « Bend ▾ » et « Slide ▾ » règlent la hauteur et la direction ; « Son » dans le panneau Pistes choisit clean, crunch ou distorsion ; « Plus… » ajoute D.C., D.S. et Coda.

@@ -4,7 +4,7 @@
  * ouvre le sélecteur de frette ; on peut aussi taper la frette au clavier.
  */
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { barFillStatus, deleteBars, insertBarAfter, selectedBeats, setCursor } from '@guitar-lab/core';
+import { barFillInfo, deleteBars, insertBarAfter, selectedBeats, setCursor } from '@guitar-lab/core';
 import { BAR_START_ROOM, player } from '../audio/player';
 import { useApp, useEditor } from '../app/store';
 import { FretPicker } from './FretPicker';
@@ -33,7 +33,7 @@ export function ScoreView({ scrollRef }: { scrollRef: React.RefObject<HTMLDivEle
   const pickerOpen = useApp((s) => s.picker);
   const [cursorRect, setCursorRect] = useState<{ beat: Rect; note?: Rect; stringY?: number; sel: Rect[] } | null>(null);
   const [renderTick, setRenderTick] = useState(0);
-  const [badBars, setBadBars] = useState<Array<Rect & { key: string; label: string; over: boolean; labelTop: number }>>([]);
+  const [badBars, setBadBars] = useState<Array<Rect & { key: string; label: string; title: string; over: boolean; labelTop: number }>>([]);
   const [barRects, setBarRects] = useState<Array<Rect & { bar: number; top: number; bottom: number; staffY: number; staffH: number; lines: number }>>([]);
 
   // Montage d'alphaTab.
@@ -74,15 +74,16 @@ export function ScoreView({ scrollRef }: { scrollRef: React.RefObject<HTMLDivEle
 
   // Mesures dont le total des durées ne correspond pas à la signature : en rouge, comme Guitar Pro.
   useLayoutEffect(() => {
-    const out: Array<Rect & { key: string; label: string; over: boolean; labelTop: number }> = [];
+    const out: Array<Rect & { key: string; label: string; title: string; over: boolean; labelTop: number }> = [];
     for (const ti of tracksKey.split(',').map(Number)) {
       const t = editor.song.tracks[ti];
       if (!t) continue;
       editor.song.masterBars.forEach((mb, bi) => {
-        const st = barFillStatus(t.bars[bi], mb);
-        if (st !== 'incomplete' && st !== 'overfull') return;
+        const info = barFillInfo(t.bars[bi], mb);
+        if (info.status !== 'incomplete' && info.status !== 'overfull') return;
         const r = player.barRect(ti, bi);
-        if (r) out.push({ ...r, labelTop: r.top - 22, key: `${ti}-${bi}`, over: st === 'overfull', label: st === 'overfull' ? 'Trop longue' : 'Incomplète' });
+        // « 3½ / 4 temps » : ce que contiennent les notes, sur ce que demande la signature.
+        if (r) out.push({ ...r, labelTop: r.top - 22, key: `${ti}-${bi}`, over: info.status === 'overfull', label: info.text, title: info.detail });
       });
     }
     setBadBars(out);
@@ -120,7 +121,8 @@ export function ScoreView({ scrollRef }: { scrollRef: React.RefObject<HTMLDivEle
     const top = el.scrollTop;
     const view = el.clientHeight;
     let target = top;
-    if (y - 20 < top) target = Math.max(0, y - 60);
+    // Au-dessus de la mesure : de la place pour son compte de temps (« 3½ / 4 temps »).
+    if (y - 48 < top) target = Math.max(0, y - 90);
     else {
       // Bas de ce qui doit être visible : la portée, ou le bas du sélecteur s'il est ouvert.
       const pickerH = wrapRef.current?.querySelector('.fret-picker')?.getBoundingClientRect().height ?? 360;
@@ -225,7 +227,7 @@ export function ScoreView({ scrollRef }: { scrollRef: React.RefObject<HTMLDivEle
           {badBars.map((b) => (
             <div key={b.key}>
               <div className={`bar-bad${b.over ? ' over' : ''}`} style={{ left: b.x, top: b.y - 4, width: b.w, height: b.h + 8 }} />
-              <span className="bar-bad-label" style={{ left: b.x + 4, top: b.labelTop }}>
+              <span className="bar-bad-label" style={{ left: b.x + 4, top: b.labelTop }} title={b.title}>
                 {b.label}
               </span>
             </div>

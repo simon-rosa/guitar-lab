@@ -1,5 +1,5 @@
 /** Sections du morceau (intro, couplet…) : navigation rapide. */
-import { barFillStatus, setCursor } from '@guitar-lab/core';
+import { barFillInfo, setCursor } from '@guitar-lab/core';
 import { useApp, useEditor } from '../app/store';
 
 export function SectionsPanel() {
@@ -10,7 +10,7 @@ export function SectionsPanel() {
     .filter((x) => x.section);
   const track = s.song.tracks[s.cursor.track];
   const issues = s.song.masterBars
-    .map((mb, i) => ({ i, status: barFillStatus(track.bars[i], mb) }))
+    .map((mb, i) => ({ i, ...barFillInfo(track.bars[i], mb) }))
     .filter((x) => x.status === 'incomplete' || x.status === 'overfull');
 
   return (
@@ -37,11 +37,11 @@ export function SectionsPanel() {
         <>
           <h3 className="sub">Mesures à vérifier</h3>
           <ul className="section-list issues">
-            {issues.slice(0, 30).map(({ i, status }) => (
+            {issues.slice(0, 30).map(({ i, status, text, detail }) => (
               <li key={i}>
-                <button type="button" onClick={() => nav((st) => setCursor(st, { bar: i, beat: 0 }))}>
+                <button type="button" title={detail} onClick={() => nav((st) => setCursor(st, { bar: i, beat: 0 }))}>
                   m. {i + 1}
-                  <span className={`bar-no ${status}`}>{status === 'incomplete' ? 'incomplète' : 'trop longue'}</span>
+                  <span className={`bar-no ${status}`}>{text}</span>
                 </button>
               </li>
             ))}

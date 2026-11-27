@@ -190,3 +190,54 @@ export function playbackBarOrder(song: Song): number[] {
   }
   return order;
 }
+
+const FRACTIONS: Array<[number, string]> = [
+  [0, ''], [1 / 8, '⅛'], [1 / 6, '⅙'], [1 / 4, '¼'], [1 / 3, '⅓'], [3 / 8, '⅜'], [1 / 2, '½'],
+  [5 / 8, '⅝'], [2 / 3, '⅔'], [3 / 4, '¾'], [5 / 6, '⅚'], [7 / 8, '⅞'],
+];
+
+/** 3,5 → « 3½ », 0,25 → « ¼ », 2,333… → « 2⅓ » ; sinon un nombre à une décimale (« 2,1 »). */
+export function formatBeats(v: number): string {
+  const whole = Math.floor(v + 1e-6);
+  const frac = v - whole;
+  const match = FRACTIONS.find(([f]) => Math.abs(frac - f) < 0.01);
+  if (match) return whole === 0 && match[1] ? match[1] : `${whole}${match[1]}`;
+  if (Math.abs(frac - 1) < 0.01) return String(whole + 1);
+  return v.toFixed(1).replace('.', ',');
+}
+
+/** Unité de compte selon la signature : « temps » en x/4, sinon la valeur de note (croches en 6/8…). */
+const UNIT_NAMES: Record<number, string> = { 1: 'rondes', 2: 'blanches', 4: 'temps', 8: 'croches', 16: 'doubles', 32: 'triples' };
+
+export interface BarFillInfo {
+  status: FillStatus;
+  /** Temps occupés par les notes et silences de la voix concernée. */
+  used: number;
+  /** Temps que contient la mesure (le numérateur de la signature). */
+  total: number;
+  unit: string;
+  /** « 3½ / 4 temps ». */
+  text: string;
+  /** « il manque ½ temps », « ½ temps en trop », ou vide. */
+  detail: string;
+}
+
+/**
+ * Remplissage d'une mesure compté en temps de la signature. On décrit la voix
+ * fautive (trop longue d'abord, sinon incomplète), sinon la voix 1.
+ */
+export function barFillInfo(bar: Bar, mb: MasterBar): BarFillInfo {
+  const status = barFillStatus(bar, mb);
+  const voices = bar.voices.filter((v) => v.beats.length > 0);
+  const cap = barCapacityTicks(mb);
+  const voice =
+    voices.find((v) => voiceTicks(v) > cap) ?? voices.find((v) => voiceTicks(v) < cap) ?? voices[0] ?? bar.voices[0];
+  const [num, den] = mb.timeSignature;
+  const unitTicks = (PPQ * 4) / den;
+  const used = (voice ? voiceTicks(voice) : 0) / unitTicks;
+  const unit = UNIT_NAMES[den] ?? `${den}e`;
+  const diff = Math.abs(num - used);
+  const detail =
+    status === 'incomplete' ? `il manque ${formatBeats(diff)} ${unit}` : status === 'overfull' ? `${formatBeats(diff)} ${unit} en trop` : '';
+  return { status, used, total: num, unit, text: `${formatBeats(used)} / ${num} ${unit}`, detail };
+}
