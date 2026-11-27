@@ -40,8 +40,21 @@ class Player {
   api: Api | null = null;
   score: alphaTab.model.Score | null = null;
   private lastSong: Song | null = null;
-  /** Note à faire entendre dès que la partition modifiée est recalculée. */
-  private pendingAudition: Cursor | null = null;
+  /**
+   * Note à faire entendre. Chaque modification recharge la musique du morceau,
+   * et ce rechargement commence par un « stop » qui couperait la note : on
+   * attend donc la fin du rechargement (événement midiLoaded) pour la jouer.
+   */
+  private pendingAudition: { cursor: Cursor; at: number } | null = null;
+  private unlockAudio = () => {
+    // Le navigateur garde le son en veille tant qu'il n'a pas été réveillé
+    // pendant un geste de l'utilisateur (clic ou touche).
+    try {
+      this.api?.player?.output.activate();
+    } catch {
+      /* lecteur pas encore prêt */
+    }
+  };
   private lastOpts = '';
   private loopLastTick = 0;
   private onRendered: Array<() => void> = [];
@@ -69,6 +82,9 @@ class Player {
 
     if (isPreview()) void this.loadPreviewSoundFont(api);
     api.soundFontLoad.on((e) => useApp.getState().setPlayer({ loadingSoundFont: e.total ? e.loaded / e.total : 0 }));
+    api.midiLoaded.on(() => this.flushAudition());
+    window.addEventListener('keydown', this.unlockAudio, true);
+    window.addEventListener('pointerdown', this.unlockAudio, true);
     api.playerReady.on(() => useApp.getState().setPlayer({ ready: true, loadingSoundFont: 1 }));
     api.playerStateChanged.on((e) => useApp.getState().setPlayer({ playing: e.state === alphaTab.synth.PlayerState.Playing }));
     api.playerPositionChanged.on((e) => {
@@ -107,6 +123,8 @@ class Player {
   }
 
   destroy() {
+    window.removeEventListener('keydown', this.unlockAudio, true);
+    window.removeEventListener('pointerdown', this.unlockAudio, true);
     this.api?.destroy();
     this.api = null;
     this.score = null;
@@ -132,7 +150,6 @@ class Player {
       if (songChanged || !this.score) {
         this.score = toAlphaTabScore(song, api.settings);
         this.applyMixer(song, this.score);
-        this.flushAudition();
       }
       useApp.getState().setRenderError(null);
     } catch (e) {
@@ -169,21 +186,31 @@ class Player {
     api.renderScore(this.score!, opts.tracks.filter((t) => t < this.score!.tracks.length));
   }
 
-  /** Demande d'entendre la note écrite à cette position (jouée après recalcul de la partition). */
-  audition(c: Cursor) {
+  /**
+   * Fait entendre la note écrite à cette position. `immediate` : la partition
+   * n'a pas changé (même frette réécrite), aucun rechargement n'aura lieu.
+   */
+  audition(c: Cursor, immediate = false) {
     if (!useApp.getState().auditionNotes) return;
-    this.pendingAudition = { ...c };
+    this.unlockAudio();
+    if (immediate) this.playAuditionNote(c);
+    else this.pendingAudition = { cursor: { ...c }, at: performance.now() };
   }
 
   private flushAudition() {
-    const c = this.pendingAudition;
+    const pending = this.pendingAudition;
     this.pendingAudition = null;
+    // Une demande trop ancienne ne correspond plus au geste de l'utilisateur.
+    if (pending && performance.now() - pending.at < 2000) this.playAuditionNote(pending.cursor);
+  }
+
+  private playAuditionNote(c: Cursor) {
     const api = this.api;
-    if (!c || !api || !this.score || !useApp.getState().player.ready) return;
-    if (useApp.getState().player.playing) return; // pas de note par-dessus la lecture
+    const st = useApp.getState();
+    if (!api || !this.score || !st.player.ready || st.player.playing) return;
     const beat = findAlphaTabBeat(this.score, c);
     if (!beat || beat.index !== c.beat) return;
-    const note = beat.notes.find((n) => (beat.voice.bar.staff.isPercussion ? true : stringFromAlphaTabNote(n) === c.string));
+    const note = beat.voice.bar.staff.isPercussion ? beat.notes[0] : beat.notes.find((n) => stringFromAlphaTabNote(n) === c.string);
     try {
       if (note) api.playNote(note);
     } catch {

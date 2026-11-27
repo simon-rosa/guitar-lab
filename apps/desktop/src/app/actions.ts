@@ -155,7 +155,8 @@ export function writeNote(fret: number, opts: { string?: number; advance?: boole
     const next = setFret(placed, fret);
     return opts.advance ? moveRight(next) : next;
   });
-  player.audition(at);
+  // Si rien n'a changé (même frette réécrite), aucun rechargement : on joue tout de suite.
+  player.audition(at, useApp.getState().history.present.song === before.song);
 }
 
 export { exportAs };
