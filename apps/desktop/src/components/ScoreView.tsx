@@ -4,7 +4,7 @@
  * ouvre le sélecteur de frette ; on peut aussi taper la frette au clavier.
  */
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { barFillStatus, selectedBeats, setCursor } from '@guitar-lab/core';
+import { barFillStatus, deleteBars, insertBarAfter, selectedBeats, setCursor } from '@guitar-lab/core';
 import { player } from '../audio/player';
 import { useApp, useEditor } from '../app/store';
 import { FretPicker } from './FretPicker';
@@ -32,6 +32,7 @@ export function ScoreView({ scrollRef }: { scrollRef: React.RefObject<HTMLDivEle
   const [cursorRect, setCursorRect] = useState<{ beat: Rect; note?: Rect; stringY?: number; sel: Rect[] } | null>(null);
   const [renderTick, setRenderTick] = useState(0);
   const [badBars, setBadBars] = useState<Array<Rect & { key: string; label: string; over: boolean }>>([]);
+  const [barRects, setBarRects] = useState<Array<Rect & { bar: number }>>([]);
 
   // Montage d'alphaTab.
   useEffect(() => {
@@ -84,6 +85,30 @@ export function ScoreView({ scrollRef }: { scrollRef: React.RefObject<HTMLDivEle
     }
     setBadBars(out);
   }, [editor.song, tracksKey, renderTick]);
+
+  // Position de chaque mesure (sur la première piste affichée) pour ses boutons + / −.
+  useLayoutEffect(() => {
+    const ti = Number(tracksKey.split(',')[0]);
+    const out: Array<Rect & { bar: number }> = [];
+    editor.song.masterBars.forEach((_, bi) => {
+      const r = player.barRect(ti, bi);
+      if (r) out.push({ ...r, bar: bi });
+    });
+    setBarRects(out);
+  }, [editor.song, tracksKey, renderTick]);
+
+  const addBarAfter = (bar: number) => {
+    const app = useApp.getState();
+    app.setPicker(false);
+    app.edit((st) => setCursor(insertBarAfter(st, bar), { bar: bar + 1, beat: 0 }));
+  };
+  const removeBar = (bar: number) => {
+    const app = useApp.getState();
+    app.setPicker(false);
+    const last = app.history.present.song.masterBars.length === 1;
+    app.edit((st) => deleteBars(st, bar));
+    app.notify(last ? 'Mesure vidée (il en faut au moins une). Ctrl+Z pour annuler.' : `Mesure ${bar + 1} supprimée. Ctrl+Z pour annuler.`);
+  };
 
   // Garder le curseur (et le sélecteur) visibles.
   useEffect(() => {
@@ -151,6 +176,27 @@ export function ScoreView({ scrollRef }: { scrollRef: React.RefObject<HTMLDivEle
           {badBars.map((b) => (
             <div key={b.key} className={`bar-bad${b.over ? ' over' : ''}`} style={{ left: b.x, top: b.y - 4, width: b.w, height: b.h + 8 }}>
               <span>{b.label}</span>
+            </div>
+          ))}
+        </div>
+        <div className="bar-tools-layer">
+          {barRects.map((r) => (
+            <div
+              key={r.bar}
+              className="bar-tools"
+              style={{
+                left: r.x + r.w - 46,
+                // Plus haut quand la mesure porte un tempo ou une section, pour ne pas les recouvrir.
+                top: r.y - (r.bar === 0 || editor.song.masterBars[r.bar]?.tempo || editor.song.masterBars[r.bar]?.section ? 52 : 30),
+              }}
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              <button type="button" title={`Supprimer la mesure ${r.bar + 1}`} aria-label={`Supprimer la mesure ${r.bar + 1}`} onClick={() => removeBar(r.bar)}>
+                −
+              </button>
+              <button type="button" title={`Ajouter une mesure vide après la mesure ${r.bar + 1}`} aria-label={`Ajouter une mesure après la mesure ${r.bar + 1}`} onClick={() => addBarAfter(r.bar)}>
+                +
+              </button>
             </div>
           ))}
         </div>
