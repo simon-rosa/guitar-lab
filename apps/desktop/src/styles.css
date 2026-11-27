@@ -2037,3 +2037,53 @@ legend {
 .toolbar .voice-group .group-label {
   display: inline;
 }
+
+/* ---------- Menu du clic droit ---------- */
+.ctx-menu {
+  position: fixed;
+  z-index: 2600;
+  min-width: 270px;
+  padding: 4px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.32);
+}
+
+.ctx-group + .ctx-group {
+  border-top: 1px solid var(--line);
+  margin-top: 4px;
+  padding-top: 4px;
+}
+
+.ctx-menu button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 5px;
+  background: none;
+  color: var(--ink);
+  font-size: 13px;
+  text-align: left;
+}
+
+.ctx-menu button:hover:not(:disabled) {
+  background: var(--accent-soft);
+}
+
+.ctx-menu button:disabled {
+  opacity: 0.4;
+}
+
+.ctx-menu button.primary-item {
+  font-weight: 600;
+}
+
+.ctx-menu kbd {
+  font-size: 10.5px;
+  color: var(--ink-2);
+}

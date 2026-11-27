@@ -7,7 +7,7 @@ export type ActionId =
   | 'cursor.left' | 'cursor.right' | 'cursor.up' | 'cursor.down'
   | 'cursor.prevBar' | 'cursor.nextBar'
   | 'select.left' | 'select.right'
-  | 'edit.delete' | 'edit.insertBeat' | 'edit.rest'
+  | 'edit.delete' | 'edit.insertBeat' | 'edit.insertBeatAfter' | 'edit.rest'
   | 'edit.undo' | 'edit.redo' | 'edit.copy' | 'edit.cut' | 'edit.paste' | 'edit.selectAllBar'
   | 'duration.shorter' | 'duration.longer'
   | 'duration.1' | 'duration.2' | 'duration.4' | 'duration.8' | 'duration.16' | 'duration.32'
@@ -37,7 +37,8 @@ export const ACTIONS: ActionInfo[] = [
   { id: 'select.left', label: 'Étendre la sélection à gauche', group: 'Navigation' },
   { id: 'select.right', label: 'Étendre la sélection à droite', group: 'Navigation' },
   { id: 'edit.delete', label: 'Supprimer la note / le temps', group: 'Édition' },
-  { id: 'edit.insertBeat', label: 'Insérer un temps', group: 'Édition' },
+  { id: 'edit.insertBeat', label: 'Insérer une note avant (à gauche)', group: 'Édition' },
+  { id: 'edit.insertBeatAfter', label: 'Insérer une note après (à droite)', group: 'Édition' },
   { id: 'edit.rest', label: 'Silence', group: 'Édition' },
   { id: 'edit.undo', label: 'Annuler', group: 'Édition' },
   { id: 'edit.redo', label: 'Rétablir', group: 'Édition' },
@@ -110,6 +111,7 @@ export const DEFAULT_KEYMAP: Keymap = {
   'select.right': ['Shift+ArrowRight'],
   'edit.delete': ['Delete', 'Backspace'],
   'edit.insertBeat': ['Insert', 'i'],
+  'edit.insertBeatAfter': ['Shift+i'],
   'edit.rest': ['r'],
   'edit.undo': ['Ctrl+z'],
   'edit.redo': ['Ctrl+y', 'Ctrl+Shift+z'],

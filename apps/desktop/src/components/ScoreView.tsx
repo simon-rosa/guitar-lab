@@ -8,6 +8,7 @@ import { barFillStatus, deleteBars, insertBarAfter, selectedBeats, setCursor } f
 import { BAR_START_ROOM, player } from '../audio/player';
 import { useApp, useEditor } from '../app/store';
 import { FretPicker } from './FretPicker';
+import { ContextMenu } from './ContextMenu';
 
 interface Rect {
   x: number;
@@ -131,6 +132,22 @@ export function ScoreView({ scrollRef }: { scrollRef: React.RefObject<HTMLDivEle
   }, [cursorRect, scrollRef, pickerOpen]);
 
   const [dragging, setDragging] = useState(false);
+  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
+
+  // Clic droit : place le curseur sur la note visée (sauf dans une sélection) et ouvre le menu.
+  const onContextMenu = (e: React.MouseEvent) => {
+    if (!hostRef.current) return;
+    e.preventDefault();
+    const r = hostRef.current.getBoundingClientRect();
+    const st = useApp.getState();
+    const hit = player.hitTest(e.clientX - r.left, e.clientY - r.top, st.history.present.song);
+    if (!hit) return setMenu(null);
+    const s = st.history.present;
+    const inSelection = !!s.anchor && hit.track === s.cursor.track && selectedBeats(s).some((b) => b.bar === hit.bar && b.beat === hit.beat);
+    if (!inSelection) st.nav((x) => setCursor(x, { ...hit, string: hit.string ?? x.cursor.string }));
+    st.setPicker(false);
+    setMenu({ x: e.clientX, y: e.clientY });
+  };
 
   const onMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 0 || !hostRef.current) return;
@@ -202,7 +219,7 @@ export function ScoreView({ scrollRef }: { scrollRef: React.RefObject<HTMLDivEle
           <strong>Pour commencer :</strong> cliquez sur une corde de la tablature, puis choisissez la frette. Vous pouvez aussi taper la frette au clavier (0 à 24).
         </div>
       )}
-      <div className={`score-wrap${dragging ? ' dragging' : ''}`} ref={wrapRef} onMouseDown={onMouseDown}>
+      <div className={`score-wrap${dragging ? ' dragging' : ''}`} ref={wrapRef} onMouseDown={onMouseDown} onContextMenu={onContextMenu}>
         <div ref={hostRef} className="score-host" />
         <div className="bar-status-layer" aria-hidden>
           {badBars.map((b) => (
@@ -260,6 +277,7 @@ export function ScoreView({ scrollRef }: { scrollRef: React.RefObject<HTMLDivEle
           </div>
         )}
         {pickerOpen && pickerPos && <FretPicker left={pickerPos.left} top={pickerPos.top} />}
+        {menu && <ContextMenu x={menu.x} y={menu.y} onClose={() => setMenu(null)} />}
       </div>
     </div>
   );

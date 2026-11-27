@@ -7,6 +7,7 @@ import {
   duplicateBars,
   fillBarWithRests,
   insertBarAfter,
+  insertBeatAfter,
   insertBeatBefore,
   makeRest,
   moveBar,
@@ -47,7 +48,14 @@ export function runAction(id: ActionId): void {
     case 'select.left': return nav((s) => moveLeft(s, true));
     case 'select.right': return nav((s) => moveRight(s, true));
     case 'edit.delete': return edit((s) => (s.anchor ? deleteSelection(s) : deleteAtCursor(s)));
-    case 'edit.insertBeat': return edit(insertBeatBefore);
+    case 'edit.insertBeat': {
+      edit(insertBeatBefore);
+      return app.setPicker(true);
+    }
+    case 'edit.insertBeatAfter': {
+      edit(insertBeatAfter);
+      return app.setPicker(true);
+    }
     case 'edit.rest': return edit(makeRest);
     case 'edit.undo': return app.undo();
     case 'edit.redo': return app.redo();

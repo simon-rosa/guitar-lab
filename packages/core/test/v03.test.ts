@@ -131,3 +131,18 @@ describe('renvois D.C. / D.S. / Coda', () => {
     expect(tex).toContain('\\jump DalSegnoAlCoda');
   });
 });
+
+describe('insérer une note au milieu', () => {
+  it('insertBeatAfter ajoute un emplacement vide à droite et décale la suite', async () => {
+    const { insertBeatAfter, moveRightFree, moveLeft } = await import('../src');
+    let s = createEditorState(createSong({ bars: 1 }));
+    for (const f of [1, 2, 3]) s = moveRightFree(setFret(s, f));
+    // Curseur sur la note « 2 » (2e temps), insertion à droite.
+    s = moveLeft(moveLeft(s));
+    s = insertBeatAfter(s);
+    expect(s.cursor.beat).toBe(2);
+    s = setFret(s, 9);
+    const frets = s.song.tracks[0].bars[0].voices[0].beats.map((b) => b.notes[0]?.fret);
+    expect(frets).toEqual([1, 2, 9, 3]);
+  });
+});

@@ -137,6 +137,24 @@ export function insertBeatBefore(s: EditorState): EditorState {
   });
 }
 
+/**
+ * Insère un emplacement vide juste à droite du temps courant (même durée) et y place
+ * le curseur : on peut glisser une note au milieu d'une mélodie sans rien réécrire.
+ * Les notes suivantes se décalent vers la droite.
+ */
+export function insertBeatAfter(s: EditorState): EditorState {
+  const c = s.cursor;
+  const beats = currentBeats(s);
+  // Déjà sur l'emplacement libre de fin de mesure : il est vide et saisissable.
+  if (c.beat >= beats.length) return s;
+  const st = withSong(s, (song) => {
+    const bar = song.tracks[c.track].bars[c.bar];
+    const ref = bar.voices[c.voice].beats[c.beat];
+    bar.voices[c.voice].beats.splice(c.beat + 1, 0, createBeat(ref?.duration ?? s.inputDuration));
+  });
+  return { ...st, cursor: { ...c, beat: c.beat + 1 }, anchor: null };
+}
+
 /** Transforme le temps courant en silence (ou crée un silence). */
 export function makeRest(s: EditorState): EditorState {
   const c = s.cursor;
