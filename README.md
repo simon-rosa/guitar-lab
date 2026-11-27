@@ -15,6 +15,8 @@ npm run tauri dev    # application desktop (Rust + prérequis Tauri requis)
 npm run tauri build  # installeurs desktop
 ```
 
+**Installeurs** : poussez un tag (`git tag v0.1.0 && git push --tags`) ou lancez le workflow « Release » dans l'onglet Actions. GitHub construit alors les installeurs Windows (`-setup.exe`), macOS et Linux, et les dépose dans une release en brouillon.
+
 Prérequis desktop : [Rust](https://rustup.rs) et les [dépendances système de Tauri](https://v2.tauri.app/start/prerequisites/) (WebKitGTK sous Linux, WebView2 sous Windows, Xcode CLT sous macOS).
 
 ## Vérifier

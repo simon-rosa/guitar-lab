@@ -36,8 +36,40 @@
       "icons/icon.ico"
     ],
     "fileAssociations": [
-      { "ext": ["glab"], "name": "Morceau Guitar Lab", "role": "Editor", "mimeType": "application/vnd.guitarlab+json" },
-      { "ext": ["gp", "gp5", "gp4", "gp3", "gpx"], "name": "Guitar Pro", "role": "Viewer" }
-    ]
+      {
+        "ext": [
+          "glab"
+        ],
+        "name": "Morceau Guitar Lab",
+        "role": "Editor",
+        "mimeType": "application/vnd.guitarlab+json"
+      },
+      {
+        "ext": [
+          "gp",
+          "gp5",
+          "gp4",
+          "gp3",
+          "gpx"
+        ],
+        "name": "Guitar Pro",
+        "role": "Viewer"
+      }
+    ],
+    "windows": {
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper"
+      },
+      "nsis": {
+        "languages": [
+          "French",
+          "English"
+        ],
+        "displayLanguageSelector": false,
+        "installMode": "currentUser"
+      }
+    },
+    "publisher": "Simon Rosa",
+    "copyright": "© 2026 Simon Rosa"
   }
 }
