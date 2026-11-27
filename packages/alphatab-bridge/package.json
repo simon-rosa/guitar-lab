@@ -1,0 +1,12 @@
+{
+  "name": "@guitar-lab/alphatab-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "dependencies": {
+    "@coderline/alphatab": "^1.9.0",
+    "@guitar-lab/core": "0.1.0"
+  }
+}

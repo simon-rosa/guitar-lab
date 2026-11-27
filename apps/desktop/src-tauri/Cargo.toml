@@ -1,0 +1,34 @@
+[package]
+name = "guitar-lab"
+version = "0.1.0"
+description = "Guitar Lab — éditeur de tablatures et partitions"
+authors = ["Simon Rosa"]
+edition = "2021"
+rust-version = "1.77"
+
+[lib]
+name = "guitar_lab_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+
+# Briques prévues (V1) — à activer au fil de l'implémentation :
+# cpal = "0.15"        # audio basse latence (ASIO / CoreAudio / ALSA)
+# midir = "0.10"       # entrées / sorties MIDI natives
+# rusty_link = "0.4"   # Ableton Link
+# vst3 / clack-host    # hébergement de plugins VST3 / CLAP
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+strip = true

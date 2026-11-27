@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "types": ["vite/client"],
+    "baseUrl": ".",
+    "paths": {
+      "@guitar-lab/core": ["packages/core/src/index.ts"],
+      "@guitar-lab/alphatab-bridge": ["packages/alphatab-bridge/src/index.ts"],
+      "@guitar-lab/features": ["packages/features/src/index.ts"]
+    }
+  },
+  "include": ["packages/*/src", "packages/*/test", "apps/desktop/src", "vitest.config.ts", "apps/desktop/vite.config.ts"]
+}

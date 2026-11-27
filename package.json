@@ -1,0 +1,31 @@
+{
+  "name": "guitar-lab",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Guitar Lab — éditeur de tablatures et partitions (desktop Tauri + web)",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @guitar-lab/desktop",
+    "build": "npm run build -w @guitar-lab/desktop",
+    "tauri": "npm run tauri -w @guitar-lab/desktop --",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -p tsconfig.json",
+    "docs:features": "vite-node scripts/gen-features-doc.ts",
+    "test:rust": "cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml",
+    "check": "npm run typecheck && npm test"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0",
+    "vitest": "^3.2.0",
+    "vite-node": "^3.2.0"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "UNLICENSED"
+}
