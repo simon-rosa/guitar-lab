@@ -12,6 +12,7 @@ import {
   fillBarWithRests,
   moveLeft,
   moveRight,
+  moveRightFree,
   moveString,
   pasteBeats,
   redo,
@@ -196,5 +197,26 @@ describe('propriétés de mesure', () => {
     expect(s.song.masterBars.map((m) => m.timeSignature.join('/'))).toEqual(['3/4', '3/4', '3/4', '3/4']);
     expect(s.song.masterBars[2].section?.text).toBe('Refrain');
     expect(s.song.masterBars[2].tempo).toBe(140);
+  });
+});
+
+describe('mesures trop longues (comme Guitar Pro)', () => {
+  it('laisse écrire au-delà de la mesure avec la flèche → et la signale', () => {
+    let s = createEditorState(createSong({ bars: 2 }));
+    for (let i = 0; i < 4; i++) s = moveRightFree(setFret(s, i));
+    // Mesure pleine : la flèche reste dans la mesure, sur un emplacement libre.
+    expect(s.cursor).toMatchObject({ bar: 0, beat: 4 });
+    s = setFret(s, 6);
+    expect(s.song.tracks[0].bars[0].voices[0].beats.length).toBe(5);
+    expect(barFillStatus(s.song.tracks[0].bars[0], s.song.masterBars[0])).toBe('overfull');
+    // Depuis l'emplacement libre suivant, la flèche passe à la mesure d'après.
+    s = moveRightFree(moveRightFree(s));
+    expect(s.cursor).toMatchObject({ bar: 1, beat: 0 });
+  });
+
+  it('l’avance automatique passe à la mesure suivante quand elle est pleine', () => {
+    let s = createEditorState(createSong({ bars: 2 }));
+    for (let i = 0; i < 4; i++) s = moveRight(setFret(s, i));
+    expect(s.cursor).toMatchObject({ bar: 1, beat: 0 });
   });
 });

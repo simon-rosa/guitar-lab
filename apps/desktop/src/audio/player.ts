@@ -293,6 +293,19 @@ class Player {
     return { ...base, beat: beatIndex, string };
   }
 
+  /** Rectangle d'une mesure (toutes portées de la piste), relatif au conteneur alphaTab. */
+  barRect(track: number, bar: number): { x: number; y: number; w: number; h: number } | null {
+    const lookup = this.api?.boundsLookup;
+    const first = this.score?.tracks[track]?.staves[0]?.bars[bar]?.voices[0]?.beats[0];
+    if (!lookup || !first) return null;
+    const all = lookup.findBeats(first);
+    if (!all?.length) return null;
+    const rs = all.map((b) => b.barBounds.realBounds);
+    const x = Math.min(...rs.map((r) => r.x));
+    const y = Math.min(...rs.map((r) => r.y));
+    return { x, y, w: Math.max(...rs.map((r) => r.x + r.w)) - x, h: Math.max(...rs.map((r) => r.y + r.h)) - y };
+  }
+
   /** Rectangle (relatif au conteneur alphaTab) du temps et de la note sous le curseur. */
   cursorBounds(c: Cursor): { beat: alphaTab.rendering.Bounds; note?: alphaTab.rendering.Bounds; bar?: alphaTab.rendering.Bounds; stringY?: number } | null {
     const api = this.api;

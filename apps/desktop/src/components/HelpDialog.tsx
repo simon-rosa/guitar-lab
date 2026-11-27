@@ -11,7 +11,7 @@ const STEPS: Array<{ title: string; text: string }> = [
 
 const KEYS: Array<[string, string]> = [
   ['0 à 9', 'Écrire une frette (deux chiffres rapides : 10 à 24)'],
-  ['← →', 'Temps précédent / suivant'],
+  ['← →', 'Temps précédent / suivant (→ après la dernière note : ajouter une note)'],
   ['↑ ↓', 'Corde au-dessus / en dessous'],
   ['= / −', 'Durée plus courte / plus longue'],
   ['.', 'Note pointée'],
@@ -70,6 +70,8 @@ export function HelpDialog() {
         </tbody>
       </table>
       <p className="hint">
+        Une mesure encadrée en rouge a une durée totale qui ne correspond pas à sa signature (« Trop longue » ou « Incomplète ») : ajoutez, retirez ou changez la durée de notes jusqu’à ce que le rouge disparaisse.
+        <br />
         Astuce : le manche en bas de l’écran sert aussi à saisir, un clic sur une case écrit la note. Le bouton « Tablature / Tab + partition / Partition » change les portées affichées.
       </p>
     </Modal>

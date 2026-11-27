@@ -1498,3 +1498,34 @@ legend {
 .primary.danger {
   background: var(--bad);
 }
+
+/* Mesures dont la durée totale ne correspond pas à la signature */
+.bar-status-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1400;
+}
+
+.bar-bad {
+  position: absolute;
+  background: rgba(224, 64, 64, 0.13);
+  border: 1.5px solid rgba(224, 64, 64, 0.75);
+  border-radius: 4px;
+}
+
+.bar-bad.over {
+  background: rgba(224, 64, 64, 0.22);
+}
+
+.bar-bad span {
+  position: absolute;
+  top: -18px;
+  right: 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: #e04040;
+  background: var(--bg);
+  padding: 0 4px;
+  border-radius: 3px;
+}

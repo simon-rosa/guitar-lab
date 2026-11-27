@@ -244,6 +244,24 @@ export function setCursor(s: EditorState, c: Partial<Cursor>, extendSelection = 
   return { ...s, cursor, anchor: extendSelection ? s.anchor ?? s.cursor : null };
 }
 
+/**
+ * Déplacement libre vers la droite (flèche →), comme dans Guitar Pro :
+ * après la dernière note vient toujours un emplacement libre dans la même
+ * mesure, même si elle est pleine. On peut donc écrire autant de notes que
+ * voulu ; une mesure dont le total ne colle pas est signalée, pas bloquée.
+ */
+export function moveRightFree(s: EditorState): EditorState {
+  const c = s.cursor;
+  if (c.beat < currentBeats(s).length) return setCursor(s, { beat: c.beat + 1 });
+  let st = s;
+  if (c.bar + 1 >= s.song.masterBars.length) st = insertBarAfter(s, c.bar);
+  return setCursor(st, { bar: c.bar + 1, beat: 0 });
+}
+
+/**
+ * Avance après une saisie : temps suivant, ou mesure suivante quand la
+ * mesure courante est pleine (pour enchaîner une mélodie sans y penser).
+ */
 export function moveRight(s: EditorState, extendSelection = false): EditorState {
   const c = s.cursor;
   const beats = currentBeats(s);

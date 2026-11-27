@@ -41,7 +41,7 @@ export function SectionsPanel() {
               <li key={i}>
                 <button type="button" onClick={() => nav((st) => setCursor(st, { bar: i, beat: 0 }))}>
                   m. {i + 1}
-                  <span className={`bar-no ${status}`}>{status === 'incomplete' ? 'incomplète' : 'trop pleine'}</span>
+                  <span className={`bar-no ${status}`}>{status === 'incomplete' ? 'incomplète' : 'trop longue'}</span>
                 </button>
               </li>
             ))}

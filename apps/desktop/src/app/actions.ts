@@ -11,6 +11,7 @@ import {
   moveBar,
   moveLeft,
   moveRight,
+  moveRightFree,
   moveString,
   pasteBeats,
   setBeatEffect,
@@ -37,7 +38,7 @@ export function runAction(id: ActionId): void {
   const { edit, nav } = app;
   switch (id) {
     case 'cursor.left': return nav((s) => moveLeft(s));
-    case 'cursor.right': return edit((s) => moveRight(s));
+    case 'cursor.right': return edit((s) => moveRightFree(s));
     case 'cursor.up': return nav((s) => moveString(s, -1));
     case 'cursor.down': return nav((s) => moveString(s, 1));
     case 'cursor.prevBar': return nav((s) => moveBar(s, -1));

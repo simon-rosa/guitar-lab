@@ -4,7 +4,7 @@
  * ouvre le sélecteur de frette ; on peut aussi taper la frette au clavier.
  */
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { selectedBeats, setCursor } from '@guitar-lab/core';
+import { barFillStatus, selectedBeats, setCursor } from '@guitar-lab/core';
 import { player } from '../audio/player';
 import { useApp, useEditor } from '../app/store';
 import { FretPicker } from './FretPicker';
@@ -31,6 +31,7 @@ export function ScoreView({ scrollRef }: { scrollRef: React.RefObject<HTMLDivEle
   const pickerOpen = useApp((s) => s.picker);
   const [cursorRect, setCursorRect] = useState<{ beat: Rect; note?: Rect; stringY?: number; sel: Rect[] } | null>(null);
   const [renderTick, setRenderTick] = useState(0);
+  const [badBars, setBadBars] = useState<Array<Rect & { key: string; label: string; over: boolean }>>([]);
 
   // Montage d'alphaTab.
   useEffect(() => {
@@ -67,6 +68,22 @@ export function ScoreView({ scrollRef }: { scrollRef: React.RefObject<HTMLDivEle
     }
     setCursorRect({ beat: b.beat, note: b.note, stringY: b.stringY, sel });
   }, [editor, renderTick]);
+
+  // Mesures dont le total des durées ne correspond pas à la signature : en rouge, comme Guitar Pro.
+  useLayoutEffect(() => {
+    const out: Array<Rect & { key: string; label: string; over: boolean }> = [];
+    for (const ti of tracksKey.split(',').map(Number)) {
+      const t = editor.song.tracks[ti];
+      if (!t) continue;
+      editor.song.masterBars.forEach((mb, bi) => {
+        const st = barFillStatus(t.bars[bi], mb);
+        if (st !== 'incomplete' && st !== 'overfull') return;
+        const r = player.barRect(ti, bi);
+        if (r) out.push({ ...r, key: `${ti}-${bi}`, over: st === 'overfull', label: st === 'overfull' ? 'Trop longue' : 'Incomplète' });
+      });
+    }
+    setBadBars(out);
+  }, [editor.song, tracksKey, renderTick]);
 
   // Garder le curseur (et le sélecteur) visibles.
   useEffect(() => {
@@ -130,6 +147,13 @@ export function ScoreView({ scrollRef }: { scrollRef: React.RefObject<HTMLDivEle
       )}
       <div className="score-wrap" ref={wrapRef} onMouseDown={onMouseDown}>
         <div ref={hostRef} className="score-host" />
+        <div className="bar-status-layer" aria-hidden>
+          {badBars.map((b) => (
+            <div key={b.key} className={`bar-bad${b.over ? ' over' : ''}`} style={{ left: b.x, top: b.y - 4, width: b.w, height: b.h + 8 }}>
+              <span>{b.label}</span>
+            </div>
+          ))}
+        </div>
         {cursorRect && (
           <div className="cursor-layer" aria-hidden>
             {cursorRect.sel.map((r, i) => (

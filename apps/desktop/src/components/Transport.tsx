@@ -109,7 +109,7 @@ export function Transport() {
         <span>Voix {s.cursor.voice + 1}</span>
         <span>{durationName(beat?.duration ?? s.inputDuration)}</span>
         <span>{mb.timeSignature.join('/')}{tempo !== s.song.tempo ? ` · ♩ = ${tempo} ici` : ''}</span>
-        <span className={`fill ${fill}`}>{{ empty: 'mesure vide', incomplete: 'incomplète', full: 'complète', overfull: 'trop pleine' }[fill]}</span>
+        <span className={`fill ${fill}`}>{{ empty: 'mesure vide', incomplete: 'incomplète', full: 'complète', overfull: 'trop longue' }[fill]}</span>
         {s.anchor && <span className="sel">Sélection</span>}
       </div>
     </footer>
