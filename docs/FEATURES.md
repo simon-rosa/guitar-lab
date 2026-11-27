@@ -5,9 +5,9 @@
 | Priorité | Faites | Partielles | Squelettes | Total |
 | --- | --- | --- | --- | --- |
 | MVP | 30 | 1 | 0 | 31 |
-| V1 | 12 | 21 | 21 | 54 |
+| V1 | 12 | 23 | 19 | 54 |
 | V2 | 0 | 1 | 22 | 23 |
-| **Tout** | 42 | 23 | 43 | 108 |
+| **Tout** | 42 | 25 | 41 | 108 |
 
 ## Édition
 
@@ -78,7 +78,7 @@
 | V1 | Sortie MIDI externe | ⬜ Squelette | `packages/features/src/daw/midi-out.ts` |  |
 | V1 | Synchro DAW (MIDI Clock, MTC, Link) | ⬜ Squelette | `packages/features/src/daw/sync.ts` |  |
 | V1 | Piste audio de référence | ⬜ Squelette | `packages/features/src/audio/backing-track.ts` |  |
-| V1 | Export WAV / MP3 / FLAC et stems | ⬜ Squelette | `packages/features/src/audio/export.ts` |  |
+| V1 | Export WAV / MP3 / FLAC et stems | 🟡 Partiel | `apps/desktop/src/audio/audioExport.ts` | WAV et MP3 du mixage complet, réverbération comprise ; FLAC et pistes séparées à faire |
 | V1 | Export MIDI multipiste | ✅ Fait | `packages/core/src/formats/midi.ts` | Keyswitches pour banques pro à faire |
 | V2 | Guitar Lab comme plugin dans le DAW | ⬜ Squelette | `packages/features/src/daw/plugin.ts` |  |
 | V2 | Enregistrement audio | ⬜ Squelette | `packages/features/src/audio/recording.ts` |  |
@@ -152,7 +152,7 @@
 | V1 | Partage par lien | ⬜ Squelette | `packages/features/src/cloud/share.ts` |  |
 | V2 | Co-édition temps réel | ⬜ Squelette | `packages/features/src/collab/realtime.ts` |  |
 | V2 | Commentaires ancrés | ⬜ Squelette | `packages/features/src/collab/comments.ts` |  |
-| V1 | Bibliothèque personnelle | ⬜ Squelette | `packages/features/src/cloud/library.ts` |  |
+| V1 | Bibliothèque personnelle | 🟡 Partiel | `apps/desktop/src/app/library.ts` | Mes morceaux sur l’appareil : récents, recherche, favoris ; synchronisation cloud à faire |
 | V2 | Communauté | ⬜ Squelette | `packages/features/src/cloud/community.ts` |  |
 | V2 | Widget intégrable | ⬜ Squelette | `packages/features/src/cloud/embed.ts` |  |
 | V2 | API de scripts et plugins | ⬜ Squelette | `packages/features/src/plugins/scripting.ts` |  |

@@ -131,6 +131,8 @@ export function runAction(id: ActionId): void {
     case 'file.open': return void openAny();
     case 'file.save': return void saveSong();
     case 'file.print': return player.print();
+    case 'file.library': return app.openDialog('library');
+    case 'file.exportAudio': return app.openDialog('audio');
     case 'view.zoomIn': return app.setPrefs({ zoom: Math.min(2, Math.round((app.zoom + 0.1) * 10) / 10) });
     case 'view.zoomOut': return app.setPrefs({ zoom: Math.max(0.5, Math.round((app.zoom - 0.1) * 10) / 10) });
     case 'view.commandPalette': return app.openDialog('palette');

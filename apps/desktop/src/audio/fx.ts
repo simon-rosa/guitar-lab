@@ -53,32 +53,40 @@ function meter(ctx: BaseAudioContext): AnalyserNode {
   return a;
 }
 
+/** Compresseur + réverbération entre `input` et `out` (aussi utilisé pour l'export audio). */
+export function buildEffects(ctx: BaseAudioContext, amount: number) {
+  const input = ctx.createGain();
+  const comp = ctx.createDynamicsCompressor();
+  comp.threshold.value = -14;
+  comp.knee.value = 10;
+  comp.ratio.value = 2.5;
+  comp.attack.value = 0.01;
+  comp.release.value = 0.2;
+  const dry = ctx.createGain();
+  const wet = ctx.createGain();
+  const out = ctx.createGain();
+  const conv = ctx.createConvolver();
+  conv.buffer = impulse(ctx);
+  link(input, comp);
+  link(comp, dry);
+  link(comp, conv);
+  link(conv, wet);
+  link(dry, out);
+  link(wet, out);
+  dry.gain.value = 1 - amount * 0.3;
+  wet.gain.value = amount * 0.9;
+  return { input, out, dry, wet };
+}
+
 /** Chaîne d'effets du contexte audio, ou `null` si elle ne peut pas être construite. */
 function chainFor(ctx: BaseAudioContext): Chain | null {
   const existing = chains.get(ctx);
   if (existing) return existing;
   try {
-    const input = ctx.createGain();
-    const comp = ctx.createDynamicsCompressor();
-    comp.threshold.value = -14;
-    comp.knee.value = 10;
-    comp.ratio.value = 2.5;
-    comp.attack.value = 0.01;
-    comp.release.value = 0.2;
-    const dry = ctx.createGain();
-    const wet = ctx.createGain();
-    const out = ctx.createGain();
-    const conv = ctx.createConvolver();
-    conv.buffer = impulse(ctx);
+    const { input, out, dry, wet } = buildEffects(ctx, reverbAmount);
     const inMeter = meter(ctx);
     const outMeter = meter(ctx);
     link(input, inMeter);
-    link(input, comp);
-    link(comp, dry);
-    link(comp, conv);
-    link(conv, wet);
-    link(dry, out);
-    link(wet, out);
     link(out, outMeter);
     link(out, ctx.destination);
     const c: Chain = { ctx, input, dry, wet, inMeter, outMeter, bypassed: false };
@@ -137,6 +145,11 @@ export function setReverb(amount: number) {
 export function bypassEffects() {
   bypass = true;
   chains.forEach(bypassChain);
+}
+
+/** Réglage de réverbération en cours (0 à 1). */
+export function currentReverb(): number {
+  return reverbAmount;
 }
 
 export function effectsBypassed(): boolean {

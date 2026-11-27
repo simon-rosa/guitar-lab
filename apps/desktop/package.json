@@ -1,6 +1,6 @@
 {
   "name": "@guitar-lab/desktop",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,6 +10,7 @@
     "tauri": "tauri"
   },
   "dependencies": {
+    "@breezystack/lamejs": "^1.2.7",
     "@coderline/alphatab": "^1.9.0",
     "@guitar-lab/alphatab-bridge": "0.1.0",
     "@guitar-lab/core": "0.1.0",

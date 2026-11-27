@@ -8,7 +8,8 @@ import { currentBeat, currentNote, DEFAULT_KEYMAP, updateMasterBar, type ActionI
 import { runAction } from '../app/actions';
 import { useApp, useEditor, type NotationMode } from '../app/store';
 import { DURATION_INFO } from './durations';
-import { BendMenu, SlideMenu } from './TechniqueMenu';
+import { BendMenu, Popover, SlideMenu } from './TechniqueMenu';
+import { useEffect, useRef, useState } from 'react';
 
 function useShortcut(id: ActionId): string {
   const keymap = useApp((s) => s.keymap);
@@ -34,13 +35,48 @@ function Btn({ action, label, children, active, className }: { action: ActionId;
 
 const TIME_SIGNATURES: Array<[number, number]> = [[4, 4], [3, 4], [2, 4], [6, 8], [12, 8], [5, 4], [7, 8], [9, 8], [2, 2]];
 
-const NOTATION_MODES: Array<[NotationMode, string]> = [
-  ['tab', 'Tab'],
-  ['both', 'Tab + partition'],
-  ['score', 'Partition'],
+const NOTATION_MODES: Array<[NotationMode, string, string]> = [
+  ['tab', 'Tab', 'Tab'],
+  ['both', 'Tab + partition', 'Tab+Part.'],
+  ['score', 'Partition', 'Part.'],
+];
+
+/**
+ * Niveau de compacité selon la largeur disponible :
+ * 0 = tout en clair ; 1 = durées sans leur nom, libellés courts ;
+ * 2 = techniques rares regroupées dans « Autres ▾ » ; 3 = encore plus serré.
+ */
+function useCompactLevel(ref: React.RefObject<HTMLDivElement | null>): number {
+  const [level, setLevel] = useState(0);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const update = () => {
+      const w = el.clientWidth;
+      setLevel(w >= 1400 ? 0 : w >= 1310 ? 1 : w >= 1090 ? 2 : 3);
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [ref]);
+  return level;
+}
+
+/** Techniques moins fréquentes : rangées dans « Autres ▾ » quand la place manque. */
+const RARE_TECHNIQUES: Array<{ action: ActionId; label: string; text: string }> = [
+  { action: 'note.harmonic', label: 'Harmonique naturelle', text: 'Harmonique' },
+  { action: 'note.ghost', label: 'Note fantôme', text: 'Fantôme' },
+  { action: 'note.accent', label: 'Accent', text: 'Accent' },
+  { action: 'note.staccato', label: 'Staccato', text: 'Staccato' },
+  { action: 'note.tap', label: 'Tapping', text: 'Tapping' },
+  { action: 'beat.pickDown', label: 'Coup de médiator descendant', text: 'Coup ↓' },
+  { action: 'beat.pickUp', label: 'Coup de médiator montant', text: 'Coup ↑' },
 ];
 
 export function Toolbar() {
+  const ref = useRef<HTMLDivElement>(null);
+  const level = useCompactLevel(ref);
   const s = useEditor();
   const beat = currentBeat(s);
   const note = currentNote(s);
@@ -50,12 +86,22 @@ export function Toolbar() {
   const canRedo = useApp((st) => st.history.future.length > 0);
   const notation = useApp((st) => st.notation);
   const zoom = useApp((st) => st.zoom);
+  const rareActive = (a: ActionId): boolean =>
+    ({
+      'note.harmonic': !!fx.harmonic,
+      'note.ghost': !!fx.ghost,
+      'note.accent': !!fx.accent,
+      'note.staccato': !!fx.staccato,
+      'note.tap': !!fx.tap,
+      'beat.pickDown': beat?.effects.pickStroke === 'down',
+      'beat.pickUp': beat?.effects.pickStroke === 'up',
+    })[a as string] ?? false;
   const ts = s.song.masterBars[s.cursor.bar].timeSignature;
   const tsKey = ts.join('/');
   const knownTs = TIME_SIGNATURES.some(([a, b]) => `${a}/${b}` === tsKey);
 
   return (
-    <div className="toolbar" role="toolbar" aria-label="Outils d’édition">
+    <div className={`toolbar compact-${level}`} role="toolbar" aria-label="Outils d’édition" ref={ref}>
       <div className="toolbar-row">
         <div className="tool-group">
           <button type="button" className="tool" title="Annuler — Ctrl+Z" aria-label="Annuler" disabled={!canUndo} onClick={() => runAction('edit.undo')}>↶</button>
@@ -111,16 +157,17 @@ export function Toolbar() {
 
         <div className="tool-group view-group" aria-label="Affichage">
           <div className="segmented" role="radiogroup" aria-label="Portées affichées">
-            {NOTATION_MODES.map(([mode, label]) => (
+            {NOTATION_MODES.map(([mode, label, short]) => (
               <button
                 key={mode}
                 type="button"
                 role="radio"
                 aria-checked={notation === mode}
                 className={notation === mode ? 'on' : ''}
+                title={label}
                 onClick={() => useApp.getState().setPrefs({ notation: mode })}
               >
-                {label}
+                {level >= 1 ? short : label}
               </button>
             ))}
           </div>
@@ -141,14 +188,35 @@ export function Toolbar() {
         <Btn action="note.palmMute" label="Palm mute" active={!!fx.palmMute} className="text">Palm mute</Btn>
         <Btn action="note.dead" label="Note étouffée (x)" active={!!fx.dead} className="text">Étouffée ✕</Btn>
         <Btn action="note.letRing" label="Laisser sonner" active={!!fx.letRing} className="text">Let ring</Btn>
-        <Btn action="note.harmonic" label="Harmonique naturelle" active={!!fx.harmonic} className="text">Harmonique</Btn>
-        <Btn action="note.tie" label="Liaison de prolongation" active={!!note?.tie} className="text">Liée</Btn>
-        <Btn action="note.ghost" label="Note fantôme" active={!!fx.ghost} className="text">Fantôme</Btn>
-        <Btn action="note.accent" label="Accent" active={!!fx.accent} className="text">Accent</Btn>
-        <Btn action="note.staccato" label="Staccato" active={!!fx.staccato} className="text">Staccato</Btn>
-        <Btn action="note.tap" label="Tapping" active={!!fx.tap} className="text">Tapping</Btn>
-        <Btn action="beat.pickDown" label="Coup de médiator descendant" active={beat?.effects.pickStroke === 'down'} className="text">Coup ↓</Btn>
-        <Btn action="beat.pickUp" label="Coup de médiator montant" active={beat?.effects.pickStroke === 'up'} className="text">Coup ↑</Btn>
+        {level < 2 ? (
+          RARE_TECHNIQUES.map((t) => (
+            <Btn key={t.action} action={t.action} label={t.label} active={rareActive(t.action)} className="text">{t.text}</Btn>
+          ))
+        ) : (
+          <Popover label="Autres" active={RARE_TECHNIQUES.some((t) => rareActive(t.action))} title="Autres techniques" align="right">
+            {(close) => (
+              <div className="tech-list">
+                {RARE_TECHNIQUES.map((t) => (
+                  <button
+                    key={t.action}
+                    type="button"
+                    role="menuitemcheckbox"
+                    aria-checked={rareActive(t.action)}
+                    className={`tech-item${rareActive(t.action) ? ' on' : ''}`}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      runAction(t.action);
+                      close();
+                    }}
+                  >
+                    <span className="check-mark">{rareActive(t.action) ? '✓' : ''}</span>
+                    <span>{t.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </Popover>
+        )}
         <span className="spacer" />
         <span className="voice-group">
           <span className="group-label">Voix</span>

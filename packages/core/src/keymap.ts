@@ -18,7 +18,7 @@ export type ActionId =
   | 'voice.1' | 'voice.2' | 'voice.3' | 'voice.4'
   | 'transpose.up' | 'transpose.down'
   | 'play.toggle' | 'play.fromCursor' | 'play.loop'
-  | 'file.new' | 'file.open' | 'file.save' | 'file.print'
+  | 'file.new' | 'file.open' | 'file.save' | 'file.print' | 'file.library' | 'file.exportAudio'
   | 'view.zoomIn' | 'view.zoomOut' | 'view.commandPalette' | 'view.help';
 
 export interface ActionInfo {
@@ -88,6 +88,8 @@ export const ACTIONS: ActionInfo[] = [
   { id: 'file.open', label: 'Ouvrir', group: 'Fichier' },
   { id: 'file.save', label: 'Enregistrer', group: 'Fichier' },
   { id: 'file.print', label: 'Imprimer / PDF', group: 'Fichier' },
+  { id: 'file.library', label: 'Mes morceaux…', group: 'Fichier' },
+  { id: 'file.exportAudio', label: 'Exporter en audio (MP3 / WAV)…', group: 'Fichier' },
   { id: 'view.zoomIn', label: 'Zoom avant', group: 'Affichage' },
   { id: 'view.zoomOut', label: 'Zoom arrière', group: 'Affichage' },
   { id: 'view.commandPalette', label: 'Palette de commandes', group: 'Affichage' },
@@ -158,6 +160,8 @@ export const DEFAULT_KEYMAP: Keymap = {
   'file.open': ['Ctrl+o'],
   'file.save': ['Ctrl+s'],
   'file.print': ['Ctrl+p'],
+  'file.library': ['Ctrl+Shift+o'],
+  'file.exportAudio': ['Ctrl+Shift+e'],
   'view.zoomIn': ['Ctrl+='],
   'view.zoomOut': ['Ctrl+-'],
   'view.commandPalette': ['Ctrl+k'],

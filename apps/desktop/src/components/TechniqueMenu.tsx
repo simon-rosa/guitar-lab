@@ -7,7 +7,7 @@ import { currentNote, setNoteEffect, type BendType, type EditorState, type Slide
 import { getEditor, useApp, useEditor } from '../app/store';
 import { player } from '../audio/player';
 
-function Popover({ label, active, title, children }: { label: ReactNode; active: boolean; title: string; children: (close: () => void) => ReactNode }) {
+export function Popover({ label, active, title, children, align = 'left' }: { label: ReactNode; active: boolean; title: string; children: (close: () => void) => ReactNode; align?: 'left' | 'right' }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -42,7 +42,7 @@ function Popover({ label, active, title, children }: { label: ReactNode; active:
         {label} <span className="caret">▾</span>
       </button>
       {open && (
-        <div className="tech-pop" role="menu">
+        <div className={`tech-pop${align === 'right' ? ' right' : ''}`} role="menu">
           {children(() => setOpen(false))}
         </div>
       )}

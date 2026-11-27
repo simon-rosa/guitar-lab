@@ -23,7 +23,7 @@ export type Theme = 'light' | 'dark' | 'stage';
 export type LayoutMode = 'page' | 'horizontal';
 /** Portées affichées : tablature seule (par défaut), partition seule, ou les deux. */
 export type NotationMode = 'tab' | 'both' | 'score';
-export type DialogId = 'bar' | 'track' | 'song' | 'shortcuts' | 'palette' | 'tuner' | 'roadmap' | 'about' | 'help' | 'chord' | null;
+export type DialogId = 'bar' | 'track' | 'song' | 'shortcuts' | 'palette' | 'tuner' | 'roadmap' | 'about' | 'help' | 'chord' | 'library' | 'audio' | null;
 
 export interface PlayerUiState {
   ready: boolean;
@@ -63,6 +63,8 @@ interface Prefs {
 export interface AppState extends Prefs {
   history: History<EditorState>;
   fileName: string | null;
+  /** Morceau courant dans « Mes morceaux » (null : pas encore enregistré). */
+  libraryId: string | null;
   dirty: boolean;
   clipboard: Beat[];
   dialog: DialogId;
@@ -80,7 +82,9 @@ export interface AppState extends Prefs {
   nav: (fn: (s: EditorState) => EditorState) => void;
   undo: () => void;
   redo: () => void;
-  loadDocument: (state: EditorState, fileName: string | null) => void;
+  /** `libraryId` : entrée correspondante dans « Mes morceaux ». */
+  loadDocument: (state: EditorState, fileName: string | null, libraryId?: string | null) => void;
+  setLibraryId: (id: string | null) => void;
   markSaved: (fileName?: string) => void;
   setPrefs: (p: Partial<Prefs>) => void;
   setPlayer: (p: Partial<PlayerUiState>) => void;
@@ -134,6 +138,7 @@ export const useApp = create<AppState>((set, get) => ({
   ...loadPrefs(),
   history: createHistory(demoState()),
   fileName: null,
+  libraryId: null,
   dirty: false,
   clipboard: [],
   dialog: null,
@@ -164,7 +169,8 @@ export const useApp = create<AppState>((set, get) => ({
   nav: (fn) => set((st) => ({ history: replacePresent(st.history, fn(st.history.present)) })),
   undo: () => set((st) => ({ history: undo(st.history), dirty: true })),
   redo: () => set((st) => ({ history: redo(st.history), dirty: true })),
-  loadDocument: (state, fileName) => set({ history: createHistory(state), fileName, dirty: false, renderError: null }),
+  loadDocument: (state, fileName, libraryId = null) => set({ history: createHistory(state), fileName, libraryId, dirty: false, renderError: null }),
+  setLibraryId: (libraryId) => set({ libraryId }),
   markSaved: (fileName) => set((st) => ({ dirty: false, fileName: fileName ?? st.fileName })),
   setPrefs: (p) => {
     set(p);

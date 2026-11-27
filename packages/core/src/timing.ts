@@ -5,8 +5,16 @@ export const PPQ = 960;
 
 const TUPLET_DENOMINATOR: Record<Tuplet, number> = { 3: 2, 5: 4, 6: 4, 7: 4, 9: 8, 10: 8, 11: 8, 12: 8 };
 
+/**
+ * Nombre de notes « normales » remplacées par le n-olet (3 → 2, 5 → 4…).
+ * Les n-olets rares venus d'un fichier importé (13, 15…) prennent la puissance de 2 inférieure.
+ */
+export function tupletDenominator(tuplet: number): number {
+  return TUPLET_DENOMINATOR[tuplet as Tuplet] ?? 2 ** Math.floor(Math.log2(Math.max(2, tuplet)));
+}
+
 export function tupletRatio(tuplet?: Tuplet): number {
-  return tuplet ? TUPLET_DENOMINATOR[tuplet] / tuplet : 1;
+  return tuplet ? tupletDenominator(tuplet) / tuplet : 1;
 }
 
 /** Durée d'un temps en ticks (PPQ = noire). */

@@ -1802,3 +1802,238 @@ legend {
   gap: 2px;
   white-space: nowrap;
 }
+
+/* ---------- Menus : intitulés de groupe ---------- */
+.menu-heading {
+  padding: 6px 12px 2px 34px;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+}
+
+/* ---------- Mes morceaux ---------- */
+.lib-bar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.lib-search {
+  flex: 1;
+  height: 34px;
+  padding: 0 10px;
+  font-size: 14px;
+}
+
+.lib-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 52vh;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.lib-item {
+  display: grid;
+  grid-template-columns: 32px 1fr auto auto;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px 6px 4px;
+  border-bottom: 1px solid var(--line);
+}
+
+.lib-item:last-child {
+  border-bottom: 0;
+}
+
+.lib-item:hover {
+  background: var(--bg-3);
+}
+
+.lib-item.current {
+  background: var(--accent-soft);
+}
+
+.lib-fav {
+  border: 0;
+  background: none;
+  font-size: 17px;
+  color: var(--ink-2);
+}
+
+.lib-fav.on {
+  color: var(--warn);
+}
+
+.lib-main {
+  display: grid;
+  gap: 2px;
+  text-align: left;
+  border: 0;
+  background: none;
+  padding: 4px 0;
+  min-width: 0;
+}
+
+.lib-title {
+  font-size: 14.5px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lib-badge {
+  margin-left: 8px;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  vertical-align: 2px;
+}
+
+.lib-meta {
+  font-size: 12px;
+  color: var(--ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lib-date {
+  font-size: 12px;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.lib-actions {
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+}
+
+.lib-item:hover .lib-actions,
+.lib-item:focus-within .lib-actions {
+  opacity: 1;
+}
+
+.lib-rename {
+  height: 30px;
+  font-size: 14px;
+}
+
+.lib-empty {
+  padding: 28px;
+  text-align: center;
+  color: var(--ink-2);
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+}
+
+/* ---------- Export audio ---------- */
+.audio-formats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 10px 0 12px;
+}
+
+.audio-format {
+  display: grid;
+  gap: 4px;
+  text-align: left;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.audio-format strong {
+  font-size: 16px;
+}
+
+.audio-format span {
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.audio-format.on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.progress {
+  position: relative;
+  height: 26px;
+  margin-top: 12px;
+  border-radius: 6px;
+  background: var(--bg-3);
+  overflow: hidden;
+}
+
+.progress-bar {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--accent);
+  transition: width 0.2s;
+}
+
+.progress span {
+  position: relative;
+  display: block;
+  line-height: 26px;
+  padding-left: 10px;
+  font-size: 12.5px;
+  color: var(--ink);
+  mix-blend-mode: normal;
+}
+
+.error-text {
+  color: var(--bad);
+  font-size: 13px;
+}
+
+/* ---------- Barre d'outils compacte (écrans moins larges) ---------- */
+.toolbar.compact-1 .tool.duration,
+.toolbar.compact-2 .tool.duration,
+.toolbar.compact-3 .tool.duration {
+  grid-template-rows: 26px;
+  height: 34px;
+  min-width: 34px;
+}
+
+.toolbar.compact-1 .tool.duration .name,
+.toolbar.compact-2 .tool.duration .name,
+.toolbar.compact-3 .tool.duration .name {
+  display: none;
+}
+
+.toolbar.compact-2 .group-label,
+.toolbar.compact-3 .group-label {
+  display: none;
+}
+
+.toolbar.compact-3 .tool.text {
+  padding: 0 6px;
+  font-size: 11.5px;
+}
+
+.toolbar.compact-3 .zoom-value {
+  display: none;
+}
+
+.tech-pop.right {
+  left: auto;
+  right: 0;
+}
+
+.toolbar .voice-group .group-label {
+  display: inline;
+}

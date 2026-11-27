@@ -212,6 +212,26 @@ function convertMasterBar(mb: alphaTab.model.MasterBar): MasterBar {
   return out;
 }
 
+/**
+ * Les fichiers Guitar Pro stockent un volume par note : les accents y font alterner
+ * fff / f d'une note à l'autre, ce qui couvrirait la partition de nuances. On ne garde
+ * une nuance que si elle change vraiment et dure au moins deux notes.
+ */
+function stabilizeDynamics(seqs: Array<Array<{ beat: Beat; dyn: number }>>) {
+  for (const seq of seqs) {
+    if (!seq) continue;
+    let current = 5; // f, la nuance par défaut d'alphaTab
+    seq.forEach(({ beat, dyn }, i) => {
+      delete beat.effects.dynamic;
+      const lasting = i === seq.length - 1 || seq[i + 1].dyn === dyn;
+      if (dyn !== current && lasting && DYNAMICS[dyn]) {
+        beat.effects.dynamic = DYNAMICS[dyn];
+        current = dyn;
+      }
+    });
+  }
+}
+
 /** Convertit un Score alphaTab (issu d'un fichier GP, MusicXML…) en Song. */
 export function fromAlphaTabScore(score: ATScore): Song {
   const masterBars = score.masterBars.map(convertMasterBar);
@@ -219,21 +239,25 @@ export function fromAlphaTabScore(score: ATScore): Song {
     const staff = t.staves[0];
     const isPerc = staff.isPercussion;
     const pi = t.playbackInfo;
+    // Nuance de chaque temps, par voix, pour ne garder que les vrais changements (voir plus bas).
+    const dynSeq: Array<Array<{ beat: Beat; dyn: number }>> = [];
     const bars: Bar[] = staff.bars.map((bar) => {
       let prevDyn = 5;
       return {
         voices: bar.voices
           .filter((v, vi) => vi === 0 || !v.isEmpty)
           .slice(0, 4)
-          .map((v) => ({
+          .map((v, vi) => ({
             beats: v.beats.map((b) => {
               const beat = convertBeat(b, staff, prevDyn);
               prevDyn = b.dynamics;
+              if (!b.isRest) (dynSeq[vi] ??= []).push({ beat, dyn: b.dynamics });
               return beat;
             }),
           })),
       };
     });
+    stabilizeDynamics(dynSeq);
     while (bars.length < masterBars.length) bars.push(createBar());
     const chords = staff.chords
       ? [...staff.chords.values()].map((c) => ({

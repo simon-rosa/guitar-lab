@@ -3,7 +3,8 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { DEFAULT_KEYMAP, type ActionId } from '@guitar-lab/core';
 import { input_midi_input } from '@guitar-lab/features';
 import { runAction, writeNote } from '../app/actions';
-import { exportAs, newSong, openAny, saveSong } from '../app/files';
+import { exportAs, newSong, openAny, openFromLibrary, saveFileCopy } from '../app/files';
+import { useLibrary } from './LibraryDialog';
 import { getEditor, useApp, type DialogId } from '../app/store';
 import { isPreview, isTauri } from '../app/platform';
 
@@ -22,6 +23,8 @@ interface Item {
   run?: () => void;
   checked?: boolean;
   separator?: boolean;
+  /** Intitulé de groupe, non cliquable. */
+  heading?: boolean;
 }
 
 function Menu({ label, items }: { label: string; items: Item[] }) {
@@ -44,6 +47,8 @@ function Menu({ label, items }: { label: string; items: Item[] }) {
           {items.map((it, i) =>
             it.separator ? (
               <hr key={i} />
+            ) : it.heading ? (
+              <div key={i} className="menu-heading">{it.label}</div>
             ) : (
               <button
                 key={i}
@@ -98,6 +103,14 @@ export function MenuBar({ right }: { right?: ReactNode }) {
     }
   };
 
+  // Les 5 derniers morceaux, ouverts en un clic.
+  const library = useLibrary();
+  const libraryId = useApp((x) => x.libraryId);
+  const recent = (library ?? []).filter((e) => e.id !== libraryId).slice(0, 5);
+  const recentItems: Item[] = recent.length
+    ? [sep, { label: 'Récents', heading: true }, ...recent.map((e) => ({ label: e.title, run: () => void openFromLibrary(e.id) }))]
+    : [];
+
   return (
     <nav className="menubar" aria-label="Menus">
       <span className="brand" aria-hidden>
@@ -107,10 +120,14 @@ export function MenuBar({ right }: { right?: ReactNode }) {
         label="Fichier"
         items={[
           { label: 'Nouveau', run: newSong, action: 'file.new' },
-          { label: 'Ouvrir… (glab, Guitar Pro, MusicXML, tab texte)', action: 'file.open' },
-          { label: 'Enregistrer', action: 'file.save' },
-          { label: 'Enregistrer sous…', run: () => void saveSong(true) },
+          { label: 'Mes morceaux…', action: 'file.library' },
+          { label: 'Importer un fichier… (Guitar Pro, MusicXML…)', action: 'file.open' },
+          ...recentItems,
           sep,
+          { label: 'Enregistrer (dans Mes morceaux)', action: 'file.save' },
+          { label: isPreview() ? 'Télécharger une copie (.glab)' : 'Enregistrer sous… (fichier .glab)', run: () => void saveFileCopy(true) },
+          sep,
+          { label: 'Exporter en audio (MP3 / WAV)…', action: 'file.exportAudio' },
           { label: 'Exporter en Guitar Pro (.gp)', run: () => void exportAs('gp') },
           { label: 'Exporter en MIDI (.mid)', run: () => void exportAs('midi') },
           { label: 'Exporter en tablature texte (.txt)', run: () => void exportAs('ascii') },

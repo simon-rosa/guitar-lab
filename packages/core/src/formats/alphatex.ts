@@ -5,7 +5,7 @@
  */
 import type { Beat, Direction, Finger, MasterBar, Note, Song, Track } from '../model';
 import { pitchName } from '../pitch';
-import { barCapacityTicks, ticksToDurations } from '../timing';
+import { barCapacityTicks, ticksToDurations, tupletDenominator } from '../timing';
 
 const q = (s: string) => `"${s.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
 
@@ -67,7 +67,8 @@ function beatEffects(b: Beat, chordIds: Map<string, string>): string[] {
   const e = b.effects;
   if (b.dots === 1) fx.push('d');
   if (b.dots === 2) fx.push('dd');
-  if (b.tuplet) fx.push(`tu ${b.tuplet}`);
+  // n-olets usuels : « tu 3 » ; les autres (13, 15… venus d'un import) : « tu (13 8) ».
+  if (b.tuplet) fx.push([3, 5, 6, 7, 9, 10, 11, 12].includes(b.tuplet) ? `tu ${b.tuplet}` : `tu (${b.tuplet} ${tupletDenominator(b.tuplet)})`);
   if (e.pickStroke) fx.push(e.pickStroke === 'up' ? 'su' : 'sd');
   if (e.brush) fx.push({ up: 'bu', down: 'bd', 'arpeggio-up': 'au', 'arpeggio-down': 'ad' }[e.brush]);
   if (e.tremoloPicking) fx.push(`tp ${e.tremoloPicking}`);
