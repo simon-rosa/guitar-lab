@@ -1,4 +1,5 @@
-// Test de bout en bout : boutons − / + des mesures, même place partout, sans rien recouvrir.
+// Test de bout en bout : boutons + / − dans la tablature au début de chaque mesure — même place
+// partout, entre les lignes, sans toucher aucun élément dessiné (2 modes d'affichage, 3 zooms).
 // Prérequis : npm run dev (port 1420), Chrome, et « npm i -D playwright ».
 import { chromium } from 'playwright';
 const browser = await chromium.launch({ args: ['--no-sandbox'] });
@@ -19,6 +20,16 @@ for (const bar of [0, 1]) {
   await page.keyboard.press('ArrowRight');
 }
 await page.waitForTimeout(800);
+// Mesures 3 à 6 : première note sur la corde 1 ET la corde 6 dès le premier temps (cas le plus serré)
+for (let b = 0; b < 4; b++) {
+  await page.keyboard.press('1'); await page.keyboard.press('2');
+  for (let i = 0; i < 5; i++) await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('1'); await page.keyboard.press('2');
+  for (let i = 0; i < 5; i++) await page.keyboard.press('ArrowUp');
+  await page.keyboard.press('Alt+1');
+  await page.keyboard.press('ArrowRight'); await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('Alt+4');
+}
 // Plus de mesures pour avoir plusieurs lignes
 for (let i = 0; i < 10; i++) { await page.locator('.bar-tool.add').last().click(); await page.waitForTimeout(150); }
 await page.waitForTimeout(1200);
@@ -42,30 +53,45 @@ const check = async (label) => {
       return { left: r.left, right: r.right, top: r.top + t * sy, bottom: r.top + b * sy, width: r.width, height: (b - t) * sy };
     };
     const host0 = document.querySelector('.score-host').getBoundingClientRect();
-    const boxes = els.map((e) => ({ ...JSON.parse(JSON.stringify(inkBox(e))), tag: e.tagName, txt: e.textContent?.slice(0, 6) })).filter((r) => r.width > 0 || r.height > 0);
-    const hits = [];
     const btns = [...document.querySelectorAll('.bar-tool')];
+    const { player } = window.__guitarLab;
+    // Les lignes de portée forment un seul tracé dont la boîte couvre toute la portée : on les
+    // vérifie à part (un bouton ne doit toucher aucune ligne), et on écarte ce tracé ici.
+    const isStaffLines = (e, r) => e.tagName === 'path' && r.width > 300 && r.height > 60;
+    const boxes = els.filter((e) => !isStaffLines(e, e.getBoundingClientRect())).map((e) => ({ ...JSON.parse(JSON.stringify(inkBox(e))), tag: e.tagName, txt: e.textContent?.slice(0, 6) })).filter((r) => r.width > 0 || r.height > 0);
+    // Lignes de tablature : chaque bouton doit rester strictement entre deux lignes.
+    const lineHits = [];
+    btns.forEach((b, i) => {
+      const br = player.barRect(0, Math.floor(i / 2)); if (!br) return; // ordre DOM : + puis − pour chaque mesure
+      const r = b.getBoundingClientRect(); const top = r.top - host0.top, bot = r.bottom - host0.top;
+      const sp = br.staffH / (br.lines - 1);
+      for (let k = 0; k < br.lines; k++) { const ly = br.staffY + k * sp; if (ly > top + 0.5 && ly < bot - 0.5) lineHits.push(`${b.ariaLabel} coupe la ligne ${k + 1}`); }
+    });
+    const hits = [];
     for (const b of btns) {
       const r = b.getBoundingClientRect();
       for (const x of boxes) if (x.left < r.right - 0.5 && x.right > r.left + 0.5 && x.top < r.bottom - 0.5 && x.bottom > r.top + 0.5) { hits.push(`${b.ariaLabel} [${Math.round(r.left - host0.left)},${Math.round(r.top - host0.top)}] ↔ ${x.tag} «${x.txt}» ${Math.round(x.left - host0.left)},${Math.round(x.top - host0.top)} ${Math.round(x.width)}x${Math.round(x.height)}`); break; }
     }
     // même place pour chaque mesure : décalage horizontal bouton / début de mesure
-    const { player } = window.__guitarLab; const host = document.querySelector('.score-host').getBoundingClientRect();
+    const host = host0;
     const offsets = new Set();
     btns.filter((b) => b.classList.contains('add')).forEach((b, i) => { const br = player.barRect(0, i); if (br) offsets.add(Math.round(b.getBoundingClientRect().left - host.left - br.x)); });
     const lines = new Set([...document.querySelectorAll('.bar-tool.add')].map((b) => Math.round(b.getBoundingClientRect().top)));
-    // Chaque − doit être au-dessus de toute la ligne de sa mesure et chaque + en dessous.
+    // + dans l'espace entre les lignes 1 et 2, − entre les deux dernières lignes.
     const order = [];
-    btns.filter((b) => !b.classList.contains('add')).forEach((b, i) => {
+    const adds = btns.filter((x) => x.classList.contains('add')), subs = btns.filter((x) => !x.classList.contains('add'));
+    adds.forEach((b, i) => {
       const br = player.barRect(0, i); if (!br) return;
-      const minus = b.getBoundingClientRect().bottom - host0.top, plus = btns.filter((x) => x.classList.contains('add'))[i].getBoundingClientRect().top - host0.top;
-      if (!(minus <= br.top + 1 && plus >= br.bottom - 1)) order.push(`mesure ${i + 1}: −bas ${Math.round(minus)} top ${Math.round(br.top)} / +haut ${Math.round(plus)} bottom ${Math.round(br.bottom)}`);
+      const sp = br.staffH / (br.lines - 1);
+      const a = b.getBoundingClientRect(), m = subs[i].getBoundingClientRect();
+      const ac = (a.top + a.bottom) / 2 - host0.top, mc = (m.top + m.bottom) / 2 - host0.top;
+      if (Math.abs(ac - (br.staffY + sp / 2)) > 1 || Math.abs(mc - (br.staffY + br.staffH - sp / 2)) > 1) order.push(`mesure ${i + 1}`);
     });
     // Le + d'une ligne et le − de la ligne suivante ne doivent pas se toucher.
     const rects = btns.map((b) => b.getBoundingClientRect());
     let touching = [];
     for (let i = 0; i < rects.length; i++) for (let j = i + 1; j < rects.length; j++) { const a = rects[i], c = rects[j]; if (a.left < c.right && a.right > c.left && a.top < c.bottom + 12 && a.bottom + 12 > c.top) touching.push(`${btns[i].ariaLabel} [${Math.round(a.top - host0.top)}] / ${btns[j].ariaLabel} [${Math.round(c.top - host0.top)}]`); }
-    return { buttons: btns.length, hits, offsets: [...offsets], lignes: lines.size, malPlaces: order, boutonsQuiSeTouchent: touching };
+    return { buttons: btns.length, hits, lignesCoupees: lineHits, offsets: [...offsets], lignes: lines.size, malPlaces: order, boutonsQuiSeTouchent: touching };
   });
   console.log(label, JSON.stringify(res));
 };
@@ -74,5 +100,12 @@ await page.screenshot({ path: '/tmp/v7a.png' });
 await page.getByRole('radio', { name: 'Tab + partition' }).click(); await page.waitForTimeout(1500);
 await check('Tab + partition:');
 await page.screenshot({ path: '/tmp/v7b.png' });
+await page.getByRole('radio', { name: 'Tab', exact: true }).click(); await page.waitForTimeout(800);
+for (const z of [0.7, 1.6]) {
+  await page.evaluate((z) => { const raw = JSON.parse(localStorage.getItem('guitar-lab:prefs') || '{}'); raw.zoom = z; localStorage.setItem('guitar-lab:prefs', JSON.stringify(raw)); }, z);
+  await page.reload(); await page.waitForSelector('.at-surface'); await page.waitForTimeout(1800);
+  await check(`Zoom ${Math.round(z * 100)} %     :`);
+}
+await page.screenshot({ path: '/tmp/v7z.png', clip: { x: 260, y: 130, width: 700, height: 330 } });
 console.log('erreurs:', logs.join('\n') || 'aucune');
 await browser.close();

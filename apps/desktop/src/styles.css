@@ -1539,31 +1539,30 @@ legend {
 
 .bar-tool {
   position: absolute;
-  width: 20px;
-  height: 20px;
+  display: grid;
+  place-items: center;
   padding: 0;
-  border-radius: 5px;
-  border: 1px solid var(--line);
-  background: var(--bg-2);
-  color: var(--ink-2);
-  font-size: 14px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--ink);
   font-weight: 700;
   line-height: 1;
   cursor: pointer;
   pointer-events: auto;
-  opacity: 0.55;
-  transition: opacity 120ms;
+  opacity: 0.7;
+  transition: opacity 120ms, background 120ms;
 }
 
 .bar-tool:hover,
 .bar-tool:focus-visible {
   opacity: 1;
-  border-color: var(--bad);
+  background: rgba(224, 64, 64, 0.25);
   color: var(--bad);
 }
 
 .bar-tool.add:hover,
 .bar-tool.add:focus-visible {
-  border-color: var(--accent);
+  background: var(--accent-soft);
   color: var(--accent);
 }

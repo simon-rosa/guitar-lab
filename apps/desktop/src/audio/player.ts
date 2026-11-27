@@ -23,8 +23,14 @@ export interface RenderOptions {
 /** Espacement des lignes de tablature (alphaTab : 13 par défaut) : plus aéré, plus facile à viser. */
 const TAB_LINE_SPACING = 20;
 const TAB_FONT_SIZE = 17;
-/** Hauteur réservée (avant zoom) au-dessus et en dessous de chaque ligne pour les boutons de mesure. */
-const BAR_TOOL_ROOM = 26;
+/** Hauteur réservée (avant zoom) au-dessus de chaque ligne pour l'avertissement de mesure. */
+const BAR_TOOL_ROOM = 24;
+/**
+ * Espace libre (avant zoom) entre la barre de mesure et le bord gauche d'un nombre à deux
+ * chiffres sur la première note : alphaTab le fixe à environ 15,5 et aucun réglage ne le change.
+ * Les boutons + / − de la mesure tiennent dedans.
+ */
+export const BAR_START_ROOM = 15;
 
 const MIXER_KEYS = new Set(['volume', 'pan', 'mute', 'solo']);
 
@@ -174,11 +180,11 @@ class Player {
     eng.tabLineSpacing = TAB_LINE_SPACING;
     api.settings.display.resources.tablatureFont = new alphaTab.model.Font('Arial', TAB_FONT_SIZE, alphaTab.model.FontStyle.Plain, alphaTab.model.FontWeight.Bold);
     // De la place au-dessus et en dessous de chaque ligne pour les boutons − / + des mesures.
-    // Entre deux lignes : le + de la ligne du dessus, un espace, puis le − de la ligne du dessous.
+    // Un peu de place au-dessus de chaque ligne pour l'avertissement « Trop longue / Incomplète ».
     api.settings.display.systemPaddingTop = 10;
-    api.settings.display.systemPaddingBottom = 10 + 2 * BAR_TOOL_ROOM + 16;
+    api.settings.display.systemPaddingBottom = 10 + BAR_TOOL_ROOM;
     api.settings.display.firstSystemPaddingTop = BAR_TOOL_ROOM;
-    api.settings.display.lastSystemPaddingBottom = BAR_TOOL_ROOM;
+    api.settings.display.lastSystemPaddingBottom = 5;
     api.settings.display.scale = opts.zoom;
     api.settings.display.layoutMode = opts.layout === 'page' ? alphaTab.LayoutMode.Page : alphaTab.LayoutMode.Horizontal;
     const res = api.settings.display.resources;
@@ -357,7 +363,10 @@ class Player {
    * Rectangle d'une mesure (toutes portées de la piste), relatif au conteneur alphaTab,
    * et étendue verticale de tout ce qui est dessiné sur sa ligne (`top`, `bottom`).
    */
-  barRect(track: number, bar: number): { x: number; y: number; w: number; h: number; top: number; bottom: number } | null {
+  barRect(
+    track: number,
+    bar: number,
+  ): { x: number; y: number; w: number; h: number; top: number; bottom: number; staffY: number; staffH: number; lines: number } | null {
     const lookup = this.api?.boundsLookup;
     const first = this.score?.tracks[track]?.staves[0]?.bars[bar]?.voices[0]?.beats[0];
     if (!lookup || !first) return null;
@@ -375,6 +384,10 @@ class Player {
     // La dernière ligne n'inclut pas sa marge basse dans ses limites.
     const isLast = mb.staffSystemBounds === systems[systems.length - 1];
     const padBottom = isLast ? 0 : display.systemPaddingBottom * display.scale;
+    // Portée la plus basse (la tablature quand elle est affichée) : ses lignes servent de repère.
+    const lowest = [...rs].sort((a, b) => a.y - b.y).at(-1)!;
+    const staff = first.voice.bar.staff;
+    const lines = staff.showTablature && !staff.isPercussion ? staff.tuning.length : 5;
     return {
       x,
       y,
@@ -382,6 +395,9 @@ class Player {
       h: Math.max(...rs.map((r) => r.y + r.h)) - y,
       top: sys.y,
       bottom: sys.y + sys.h - padBottom,
+      staffY: lowest.y,
+      staffH: lowest.h,
+      lines,
     };
   }
 

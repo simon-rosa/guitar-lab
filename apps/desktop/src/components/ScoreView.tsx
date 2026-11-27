@@ -5,7 +5,7 @@
  */
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { barFillStatus, deleteBars, insertBarAfter, selectedBeats, setCursor } from '@guitar-lab/core';
-import { player } from '../audio/player';
+import { BAR_START_ROOM, player } from '../audio/player';
 import { useApp, useEditor } from '../app/store';
 import { FretPicker } from './FretPicker';
 
@@ -17,6 +17,7 @@ interface Rect {
 }
 
 const PICKER_WIDTH = 318;
+
 
 export function ScoreView({ scrollRef }: { scrollRef: React.RefObject<HTMLDivElement | null> }) {
   const hostRef = useRef<HTMLDivElement>(null);
@@ -32,7 +33,7 @@ export function ScoreView({ scrollRef }: { scrollRef: React.RefObject<HTMLDivEle
   const [cursorRect, setCursorRect] = useState<{ beat: Rect; note?: Rect; stringY?: number; sel: Rect[] } | null>(null);
   const [renderTick, setRenderTick] = useState(0);
   const [badBars, setBadBars] = useState<Array<Rect & { key: string; label: string; over: boolean; labelTop: number }>>([]);
-  const [barRects, setBarRects] = useState<Array<Rect & { bar: number; top: number; bottom: number }>>([]);
+  const [barRects, setBarRects] = useState<Array<Rect & { bar: number; top: number; bottom: number; staffY: number; staffH: number; lines: number }>>([]);
 
   // Montage d'alphaTab.
   useEffect(() => {
@@ -89,7 +90,7 @@ export function ScoreView({ scrollRef }: { scrollRef: React.RefObject<HTMLDivEle
   // Position de chaque mesure (sur la première piste affichée) pour ses boutons + / −.
   useLayoutEffect(() => {
     const ti = Number(tracksKey.split(',')[0]);
-    const out: Array<Rect & { bar: number; top: number; bottom: number }> = [];
+    const out: Array<Rect & { bar: number; top: number; bottom: number; staffY: number; staffH: number; lines: number }> = [];
     editor.song.masterBars.forEach((_, bi) => {
       const r = player.barRect(ti, bi);
       if (r) out.push({ ...r, bar: bi });
@@ -176,39 +177,45 @@ export function ScoreView({ scrollRef }: { scrollRef: React.RefObject<HTMLDivEle
           {badBars.map((b) => (
             <div key={b.key}>
               <div className={`bar-bad${b.over ? ' over' : ''}`} style={{ left: b.x, top: b.y - 4, width: b.w, height: b.h + 8 }} />
-              <span className="bar-bad-label" style={{ left: b.x + 30, top: b.labelTop }}>
+              <span className="bar-bad-label" style={{ left: b.x + 4, top: b.labelTop }}>
                 {b.label}
               </span>
             </div>
           ))}
         </div>
-        {/* − au-dessus et + en dessous de chaque mesure, toujours à la même place :
-            au début de la mesure, hors de tout ce qui est dessiné sur la ligne. */}
+        {/* Dans la tablature, au début de chaque mesure : + dans l'espace entre les deux premières
+            lignes, − dans l'espace entre les deux dernières. Même place pour toutes les mesures. */}
         <div className="bar-tools-layer" onMouseDown={(e) => e.stopPropagation()}>
-          {barRects.map((r) => (
-            <div key={r.bar}>
-              <button
-                type="button"
-                className="bar-tool"
-                style={{ left: r.x + 4, top: r.top - 24 }}
-                title={`Supprimer la mesure ${r.bar + 1}`}
-                aria-label={`Supprimer la mesure ${r.bar + 1}`}
-                onClick={() => removeBar(r.bar)}
-              >
-                −
-              </button>
-              <button
-                type="button"
-                className="bar-tool add"
-                style={{ left: r.x + 4, top: r.bottom + 4 }}
-                title={`Ajouter une mesure vide après la mesure ${r.bar + 1}`}
-                aria-label={`Ajouter une mesure après la mesure ${r.bar + 1}`}
-                onClick={() => addBarAfter(r.bar)}
-              >
-                +
-              </button>
-            </div>
-          ))}
+          {barRects.map((r) => {
+            const space = r.staffH / Math.max(1, r.lines - 1);
+            // Entre la barre de mesure et le premier chiffre de la mesure.
+            const size = Math.floor(Math.min(space * 0.8, (BAR_START_ROOM - 3) * zoom));
+            const left = r.x + 2 * zoom;
+            return (
+              <div key={r.bar}>
+                <button
+                  type="button"
+                  className="bar-tool add"
+                  style={{ left, top: r.staffY + space / 2 - size / 2, width: size, height: size, fontSize: Math.round(size * 1.25) }}
+                  title={`Ajouter une mesure vide après la mesure ${r.bar + 1}`}
+                  aria-label={`Ajouter une mesure après la mesure ${r.bar + 1}`}
+                  onClick={() => addBarAfter(r.bar)}
+                >
+                  +
+                </button>
+                <button
+                  type="button"
+                  className="bar-tool"
+                  style={{ left, top: r.staffY + r.staffH - space / 2 - size / 2, width: size, height: size, fontSize: Math.round(size * 1.25) }}
+                  title={`Supprimer la mesure ${r.bar + 1}`}
+                  aria-label={`Supprimer la mesure ${r.bar + 1}`}
+                  onClick={() => removeBar(r.bar)}
+                >
+                  −
+                </button>
+              </div>
+            );
+          })}
         </div>
         {cursorRect && (
           <div className="cursor-layer" aria-hidden>
