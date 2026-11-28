@@ -1,7 +1,7 @@
 {
   "name": "guitar-lab",
   "private": true,
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Guitar Lab — éditeur de tablatures et partitions (desktop Tauri + web)",
   "workspaces": [
     "packages/*",

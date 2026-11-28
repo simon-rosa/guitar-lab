@@ -45,7 +45,7 @@ function About() {
     <Modal title="Guitar Lab">
       <p>Éditeur de tablatures et partitions pour guitaristes, bassistes et musiciens professionnels.</p>
       <p className="hint">
-        Version 0.4.0 · {s.done} fonctionnalités faites, {s.partial} partielles, {s.skeleton} en squelette sur {s.total}.
+        Version 0.4.1 · {s.done} fonctionnalités faites, {s.partial} partielles, {s.skeleton} en squelette sur {s.total}.
         Rendu et lecture : alphaTab (MPL-2.0), police Bravura (SIL OFL), sons SONiVOX.
       </p>
     </Modal>
